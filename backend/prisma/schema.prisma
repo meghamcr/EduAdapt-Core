@@ -1,0 +1,660 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum RecommendationType {
+  NEXT_LESSON
+  DIFFICULTY_ADJUSTMENT
+  DROPOUT_RISK
+  CONTENT_SUGGESTION
+  PRACTICE_REQUIRED
+  REVIEW_REQUIRED
+}
+
+enum GameType {
+  EXPLORATION
+  PUZZLE
+  SORTING
+  MATCHING
+  SIMULATION
+  DRAG_DROP
+  SCENARIO
+  QUIZ
+  RIDDLE
+  WORD_GAME
+}
+
+enum GameStatus {
+  DRAFT
+  READY
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum AssetType {
+  SPRITE
+  BACKGROUND
+  CHARACTER
+  ICON
+  ANIMATION
+  SOUND
+  UI
+  OTHER
+}
+
+enum SessionStatus {
+  STARTED
+  COMPLETED
+  ABANDONED
+  SKIPPED
+}
+
+enum InteractionType {
+  START_GAME
+  ANSWER
+  HINT_USED
+  SKIP
+  RETRY
+  COMPLETE
+  PAUSE
+  RESUME
+  CONTENT_VIEWED
+  FEEDBACK_SHOWN
+}
+
+model School {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  users   User[]
+  courses Course[]
+  classes SchoolClass[]
+}
+
+model SchoolClass {
+  id               String   @id @default(uuid())
+  schoolId         String
+  grade            String
+  section          String
+  classTeacherId   String?  @unique
+  classTeacherCode String?  @unique
+  createdAt        DateTime @default(now())
+
+  school       School @relation(fields: [schoolId], references: [id])
+  classTeacher User?  @relation("ClassTeacher", fields: [classTeacherId], references: [id])
+  students     User[] @relation("StudentClass")
+
+  @@unique([schoolId, grade, section])
+  @@index([schoolId])
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(STUDENT)
+  schoolId     String
+  classId      String?
+  createdAt    DateTime @default(now())
+
+  school         School       @relation(fields: [schoolId], references: [id])
+  studentClass   SchoolClass? @relation("StudentClass", fields: [classId], references: [id])
+  classTeacherOf SchoolClass? @relation("ClassTeacher")
+
+  courses             Course[]                 @relation("TeacherCourses")
+  enrollments         Enrollment[]
+  gameSessions        GameSession[]
+  progress            StudentProgress[]
+  badges              UserBadge[]
+  leaderboard         Leaderboard[]
+  notifications       Notification[]
+  engagementLogs      EngagementLog[]
+  recommendations     Recommendation[]
+  studentInteractions StudentInteraction[]
+  studentMistakes     StudentMistake[]
+  topicMasteries      StudentTopicMastery[]
+  subtopicMasteries   StudentSubtopicMastery[]
+  xpTransactions      XPTransaction[]
+}
+
+model Course {
+  id          String        @id @default(uuid())
+  title       String
+  teacherId   String
+  schoolId    String
+  createdAt   DateTime      @default(now())
+  teacher     User          @relation("TeacherCourses", fields: [teacherId], references: [id])
+  school      School        @relation(fields: [schoolId], references: [id])
+  lessons     Lesson[]
+  enrollments Enrollment[]
+  leaderboard Leaderboard[]
+  subjects    Subject[]
+}
+
+model Subject {
+  id          String    @id @default(uuid())
+  courseId    String
+  name        String
+  code        String
+  description String?
+  orderIndex  Int
+  createdAt   DateTime  @default(now())
+  course      Course    @relation(fields: [courseId], references: [id])
+  chapters    Chapter[]
+
+  @@unique([courseId, orderIndex])
+  @@unique([courseId, code])
+  @@index([courseId])
+}
+
+model Chapter {
+  id          String   @id @default(uuid())
+  subjectId   String
+  title       String
+  description String?
+  orderIndex  Int
+  createdAt   DateTime @default(now())
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+  topics      Topic[]
+
+  @@unique([subjectId, orderIndex])
+  @@index([subjectId])
+}
+
+model Topic {
+  id           String                @id @default(uuid())
+  chapterId    String
+  title        String
+  description  String?
+  orderIndex   Int
+  createdAt    DateTime              @default(now())
+  chapter      Chapter               @relation(fields: [chapterId], references: [id])
+  subtopics    Subtopic[]
+  lessons      Lesson[]
+  objectives   LearningObjective[]
+  games        Game[]
+  masteries    StudentTopicMastery[]
+  interactions StudentInteraction[]
+  mistakes     StudentMistake[]
+
+  @@unique([chapterId, orderIndex])
+  @@index([chapterId])
+}
+
+model Subtopic {
+  id           String                   @id @default(uuid())
+  topicId      String
+  title        String
+  description  String?
+  orderIndex   Int
+  createdAt    DateTime                 @default(now())
+  topic        Topic                    @relation(fields: [topicId], references: [id])
+  lessons      Lesson[]
+  objectives   LearningObjective[]
+  games        Game[]
+  masteries    StudentSubtopicMastery[]
+  interactions StudentInteraction[]
+  mistakes     StudentMistake[]
+
+  @@unique([topicId, orderIndex])
+  @@index([topicId])
+}
+
+model LearningObjective {
+  id         String    @id @default(uuid())
+  topicId    String
+  subtopicId String?
+  statement  String
+  orderIndex Int
+  createdAt  DateTime  @default(now())
+  topic      Topic     @relation(fields: [topicId], references: [id])
+  subtopic   Subtopic? @relation(fields: [subtopicId], references: [id])
+
+  @@unique([topicId, orderIndex])
+  @@index([topicId])
+  @@index([subtopicId])
+}
+
+model Lesson {
+  id           String            @id @default(uuid())
+  title        String
+  content      String
+  courseId     String
+  orderIndex   Int
+  createdAt    DateTime          @default(now())
+  topicId      String?
+  subtopicId   String?
+  course       Course            @relation(fields: [courseId], references: [id])
+  topic        Topic?            @relation(fields: [topicId], references: [id])
+  subtopic     Subtopic?         @relation(fields: [subtopicId], references: [id])
+  gameSessions GameSession[]
+  progress     StudentProgress[]
+
+  @@index([courseId])
+  @@index([topicId])
+  @@index([subtopicId])
+}
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  studentId  String
+  courseId   String
+  enrolledAt DateTime @default(now())
+  student    User     @relation(fields: [studentId], references: [id])
+  course     Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([studentId, courseId])
+  @@index([studentId])
+  @@index([courseId])
+}
+
+model Game {
+  id                   String        @id @default(uuid())
+  topicId              String
+  subtopicId           String?
+  title                String
+  gameType             GameType
+  description          String?
+  educationalObjective String?
+  difficulty           Difficulty
+  pixelArt             Boolean       @default(true)
+  introContent         String?
+  specification        Json
+  syllabusVersion      String        @default("1.0")
+  contentHash          String        @unique
+  status               GameStatus    @default(DRAFT)
+  version              Int           @default(1)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  topic                Topic         @relation(fields: [topicId], references: [id])
+  subtopic             Subtopic?     @relation(fields: [subtopicId], references: [id])
+  assets               GameAsset[]
+  questions            Question[]
+  gameSessions         GameSession[]
+
+  @@index([topicId, difficulty, status])
+  @@index([subtopicId])
+}
+
+model GameAsset {
+  id        String    @id @default(uuid())
+  gameId    String
+  type      AssetType
+  name      String
+  url       String
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  game      Game      @relation(fields: [gameId], references: [id])
+
+  @@index([gameId])
+}
+
+model Question {
+  id            String     @id @default(uuid())
+  gameId        String
+  prompt        String
+  type          String
+  options       Json
+  correctAnswer String
+  explanation   String?
+  difficulty    Difficulty
+  points        Int        @default(10)
+  orderIndex    Int
+  game          Game       @relation(fields: [gameId], references: [id])
+
+  @@index([gameId])
+}
+
+model GameSession {
+  id                  String               @id @default(uuid())
+  studentId           String
+  lessonId            String
+  score               Int
+  accuracy            Float
+  timeSpentSec        Int
+  difficultyLevel     Int
+  playedAt            DateTime             @default(now())
+  gameId              String?
+  completion          Float                @default(0.0)
+  hintsUsed           Int                  @default(0)
+  mistakesCount       Int                  @default(0)
+  status              SessionStatus        @default(COMPLETED)
+  xpEarned            Int                  @default(0)
+  completedAt         DateTime?
+  student             User                 @relation(fields: [studentId], references: [id])
+  lesson              Lesson               @relation(fields: [lessonId], references: [id])
+  game                Game?                @relation(fields: [gameId], references: [id])
+  xpTransactions      XPTransaction[]
+  studentInteractions StudentInteraction[]
+  studentMistakes     StudentMistake[]
+
+  @@index([studentId])
+  @@index([lessonId])
+  @@index([gameId])
+  @@index([studentId, lessonId])
+  @@index([studentId, gameId])
+}
+
+model StudentProgress {
+  id           String   @id @default(uuid())
+  studentId    String
+  lessonId     String
+  masteryScore Float    @default(0)
+  attempts     Int      @default(0)
+  lastUpdated  DateTime @updatedAt
+  student      User     @relation(fields: [studentId], references: [id])
+  lesson       Lesson   @relation(fields: [lessonId], references: [id])
+
+  @@unique([studentId, lessonId])
+  @@index([studentId])
+  @@index([lessonId])
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String
+  description String
+  iconUrl     String
+  criteria    String
+  userBadges  UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  badge     Badge    @relation(fields: [badgeId], references: [id])
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+}
+
+model Leaderboard {
+  id          String   @id @default(uuid())
+  studentId   String
+  courseId    String
+  totalPoints Int      @default(0)
+  rank        Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  student     User     @relation(fields: [studentId], references: [id])
+  course      Course   @relation(fields: [courseId], references: [id])
+
+  @@unique([studentId, courseId])
+  @@index([courseId, totalPoints])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model EngagementLog {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Recommendation {
+  id        String             @id @default(uuid())
+  studentId String
+  type      RecommendationType
+  payload   Json
+  isActive  Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  student   User               @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+}
+
+model StudentInteraction {
+  id              String          @id @default(uuid())
+  studentId       String
+  sessionId       String?
+  topicId         String?
+  subtopicId      String?
+  questionId      String?
+  eventType       InteractionType
+  correctness     Boolean?
+  responseTimeSec Int?
+  hintUsage       Boolean?
+  attemptNumber   Int?
+  metadata        Json?
+  timestamp       DateTime        @default(now())
+  student         User            @relation(fields: [studentId], references: [id])
+  session         GameSession?    @relation(fields: [sessionId], references: [id])
+  topic           Topic?          @relation(fields: [topicId], references: [id])
+  subtopic        Subtopic?       @relation(fields: [subtopicId], references: [id])
+
+  @@index([studentId])
+  @@index([sessionId])
+  @@index([topicId])
+  @@index([subtopicId])
+}
+
+model StudentMistake {
+  id             String      @id @default(uuid())
+  studentId      String
+  sessionId      String
+  topicId        String
+  subtopicId     String?
+  questionId     String?
+  studentAnswer  String
+  expectedAnswer String
+  misconception  String?
+  metadata       Json?
+  timestamp      DateTime    @default(now())
+  student        User        @relation(fields: [studentId], references: [id])
+  session        GameSession @relation(fields: [sessionId], references: [id])
+  topic          Topic       @relation(fields: [topicId], references: [id])
+  subtopic       Subtopic?   @relation(fields: [subtopicId], references: [id])
+
+  @@index([studentId])
+  @@index([sessionId])
+  @@index([topicId])
+  @@index([subtopicId])
+}
+
+model StudentTopicMastery {
+  id                String     @id @default(uuid())
+  studentId         String
+  topicId           String
+  masteryScore      Float      @default(0.0)
+  accuracy          Float      @default(0.0)
+  attempts          Int        @default(0)
+  gamesCompleted    Int        @default(0)
+  gamesSkipped      Int        @default(0)
+  avgResponseTime   Float      @default(0.0)
+  hintsUsed         Int        @default(0)
+  currentDifficulty Difficulty @default(EASY)
+  lastUpdated       DateTime   @updatedAt
+  student           User       @relation(fields: [studentId], references: [id])
+  topic             Topic      @relation(fields: [topicId], references: [id])
+
+  @@unique([studentId, topicId])
+  @@index([studentId])
+  @@index([topicId])
+}
+
+model StudentSubtopicMastery {
+  id                String     @id @default(uuid())
+  studentId         String
+  subtopicId        String
+  masteryScore      Float      @default(0.0)
+  accuracy          Float      @default(0.0)
+  attempts          Int        @default(0)
+  gamesCompleted    Int        @default(0)
+  gamesSkipped      Int        @default(0)
+  avgResponseTime   Float      @default(0.0)
+  hintsUsed         Int        @default(0)
+  currentDifficulty Difficulty @default(EASY)
+  lastUpdated       DateTime   @updatedAt
+  student           User       @relation(fields: [studentId], references: [id])
+  subtopic          Subtopic   @relation(fields: [subtopicId], references: [id])
+
+  @@unique([studentId, subtopicId])
+  @@index([studentId])
+  @@index([subtopicId])
+}
+
+model XPTransaction {
+  id        String       @id @default(uuid())
+  studentId String
+  sessionId String?
+  xpAmount  Int
+  reason    String
+  metadata  Json?
+  timestamp DateTime     @default(now())
+  student   User         @relation(fields: [studentId], references: [id])
+  session   GameSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([studentId])
+  @@index([sessionId])
+}
+
+model Level {
+  id          String   @id @default(uuid())
+  levelNumber Int      @unique
+  title       String
+  requiredXp  Int
+  rewardJson  Json?
+  createdAt   DateTime @default(now())
+}
+
+model CurriculumBook {
+  id         String   @id
+  board      String   @default("NCERT")
+  grade      String
+  subject    String
+  title      String
+  edition    String?
+  sourceFile String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  chapters CurriculumChapter[]
+
+  @@unique([board, grade, subject, title])
+  @@index([board, grade, subject])
+}
+
+model CurriculumChapter {
+  id                 String   @id
+  bookId             String
+  chapterNumber      Int
+  title              String
+  learningObjectives Json
+  sourceFile         String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  book  CurriculumBook   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  nodes CurriculumNode[]
+
+  @@unique([bookId, chapterNumber])
+  @@index([bookId])
+}
+
+model CurriculumNode {
+  id          String   @id
+  chapterId   String
+  parentId    String?
+  title       String
+  type        String
+  description String?
+  content     String
+  orderIndex  Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapter CurriculumChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  parent   CurriculumNode?  @relation("CurriculumNodeHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children CurriculumNode[] @relation("CurriculumNodeHierarchy")
+
+  @@index([chapterId])
+  @@index([parentId])
+  @@index([chapterId, orderIndex])
+}
+
+model GameSpec {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  slug  String @unique
+  title String
+
+  subject String
+  topic   String
+  grade   String?
+
+  curriculumNodeId String? @map("curriculum_node_id")
+
+  renderingMode String @default("2.5D") @map("rendering_mode")
+  difficulty    String @default("EASY")
+
+  status String @default("READY")
+
+  spec Json
+
+  version Int @default(1)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@index([curriculumNodeId])
+  @@map("game_spec")
+}
+
+model GamePlaySession {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  gameSlug              String   @map("game_slug")
+  playerKey             String   @map("player_key")
+  studentId             String?  @map("student_id") @db.Uuid
+  difficulty            String   @default("EASY")
+  score                 Int      @default(0)
+  accuracy              Decimal  @default(0) @db.Decimal
+  timeTakenSec          Int      @default(0) @map("time_taken_sec")
+  attempts              Int      @default(0)
+  hintsUsed             Int      @default(0) @map("hints_used")
+  mistakes              Json     @default("[]")
+  conceptsMastered      Json     @default("[]") @map("concepts_mastered")
+  conceptsMisunderstood Json     @default("[]") @map("concepts_misunderstood")
+  completion            Boolean  @default(false)
+  abandoned             Boolean  @default(false)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("game_play_session")
+}
