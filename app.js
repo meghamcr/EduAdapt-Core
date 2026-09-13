@@ -1,0 +1,812 @@
+const SUPABASE_URL = "https://cehjqggcuyqgkwlafkig.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_nKr8PWPeNoez0uNvDu8inA_HHdFDz3I";
+const hasSupabase = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_SUPABASE") && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY";
+const supabaseClient = hasSupabase && window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const state = {
+    teacher: null,
+    students: [],
+    classes: [],
+    quizzes: [],
+    progress: [],
+    files: [],
+    events: [],
+    tickets: [],
+    attendance: [],
+    selectedClass: "All Classes",
+    calendarDate: new Date(),
+    chart: null,
+    localMode: false
+};
+
+const $ = selector => document.querySelector(selector);
+const $$ = selector => document.querySelectorAll(selector);
+const teacherKey = () => state.teacher?.id || state.teacher?.schoolId || "guest";
+const localKey = name => `eduadapt_${name}_${teacherKey()}`;
+
+window.addEventListener("DOMContentLoaded", initialize);
+
+async function initialize() {
+    loadLocalStore();
+    bindStaticControls();
+    applyTheme();
+    if (window.lucide) lucide.createIcons();
+
+    if (localStorage.getItem("eduadapt_demo_mode") === "true") {
+        const previewTeacher = JSON.parse(localStorage.getItem("eduadapt_teacher") || "null");
+        state.teacher = previewTeacher;
+        state.localMode = true;
+        await enterPortal();
+        return;
+    }
+
+    if (supabaseClient) {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data.session) {
+            state.teacher = { id: data.session.user.id, email: data.session.user.email };
+            await loadTeacherProfile();
+
+            if (!state.teacher.name) {
+                await supabaseClient.auth.signOut();
+                window.location.href = "login.html";
+                return;
+            }
+
+            await enterPortal();
+            return;
+        }
+    }
+
+    const savedTeacher = JSON.parse(localStorage.getItem("eduadapt_teacher") || "null");
+    if (savedTeacher && (localStorage.getItem("eduadapt_table_session") === "true" || !supabaseClient)) {
+        state.teacher = savedTeacher;
+        state.localMode = !supabaseClient;
+        await enterPortal();
+        return;
+    }
+
+    window.location.href = "login.html";
+}
+
+function bindStaticControls() {
+    $("#loginForm")?.addEventListener("submit", signInTeacher);
+    $("#logoutBtn")?.addEventListener("click", logoutTeacher);
+    $("#darkModeBtn")?.addEventListener("click", toggleTheme);
+    $("#globalSearch")?.addEventListener("input", event => renderStudents(event.target.value));
+    $("#classSelector")?.addEventListener("change", event => {
+        state.selectedClass = event.target.value;
+        renderAll();
+    });
+
+    $$(".nav-item").forEach(button => button.addEventListener("click", () => {
+        $$(".nav-item").forEach(item => item.classList.remove("active"));
+        button.classList.add("active");
+        showPage(button.dataset.page);
+    }));
+
+    $("#openQuizModalBtn")?.addEventListener("click", openQuizModal);
+    $("#createQuizQuickBtn")?.addEventListener("click", openQuizModal);
+    $("#quizForm")?.addEventListener("submit", saveQuiz);
+    $("#addStudentBtn")?.addEventListener("click", openStudentModal);
+    $("#studentForm")?.addEventListener("submit", saveStudent);
+    $("#editPrefBtn")?.addEventListener("click", editPreferences);
+    $("#createAssessmentBtn")?.addEventListener("click", openQuizModal);
+    $("#saveAttendanceBtn")?.addEventListener("click", saveAttendance);
+
+    $$(".modal-close").forEach(button => button.addEventListener("click", () => closeModal(button.dataset.close)));
+    window.addEventListener("click", event => {
+        if (event.target.classList.contains("modal")) event.target.classList.remove("open");
+    });
+
+    initializeFileUpload();
+    initializeCalendar();
+    initializeAdminTickets();
+    initializeChatbot();
+}
+
+async function signInTeacher(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const teacher = {
+        name: String(data.get("teacherName")).trim(),
+        schoolId: String(data.get("schoolId")).trim(),
+        email: String(data.get("email")).trim(),
+        role: data.get("role"),
+        className: String(data.get("className")).trim(),
+        subject: String(data.get("subject")).trim()
+    };
+
+    if (supabaseClient) {
+        if (!teacher.email) {
+            showToast("Enter your school email for Supabase login.");
+            return;
+        }
+        const { data: authData, error } = await supabaseClient.auth.signInWithPassword({ email: teacher.email, password: data.get("password") });
+        if (error) {
+            showToast(`Login failed: ${error.message}`);
+            return;
+        }
+        teacher.id = authData.user.id;
+        const { data: profile } = await supabaseClient
+            .from("User")
+            .select("id,name,email,role,schoolId,classId")
+            .eq("id", teacher.id)
+            .maybeSingle();
+
+        if (profile) {
+            teacher.name = profile.name;
+            teacher.schoolId = profile.schoolId;
+            teacher.role = String(profile.role || teacher.role).replace("TEACHER", "Class Teacher");
+            teacher.classId = profile.classId;
+        }
+    } else {
+        state.localMode = true;
+        localStorage.setItem("eduadapt_teacher_password_present", "true");
+    }
+
+    state.teacher = teacher;
+    localStorage.setItem("eduadapt_teacher", JSON.stringify(teacher));
+    await enterPortal();
+}
+
+async function loadTeacherProfile() {
+    const { data } = await supabaseClient
+        .from("User")
+        .select("id,name,email,role,schoolId,classId")
+        .eq("email", state.teacher.email)
+        .maybeSingle();
+    if (data) {
+        state.teacher = {
+            ...state.teacher,
+            name: data.name,
+            schoolId: data.schoolId,
+            role: String(data.role || "TEACHER").replace("TEACHER", "Class Teacher"),
+            classId: data.classId,
+            className: "All Classes"
+        };
+
+        if (data.classId) {
+            const { data: schoolClass } = await supabaseClient
+                .from("SchoolClass")
+                .select("grade,section")
+                .eq("id", data.classId)
+                .maybeSingle();
+
+            if (schoolClass) {
+                state.teacher.className = `${schoolClass.grade}${schoolClass.section ? ` ${schoolClass.section}` : ""}`;
+            }
+        }
+    }
+}
+
+async function enterPortal() {
+    state.selectedClass = state.teacher?.className || "All Classes";
+    $("#loginView")?.classList.add("hidden");
+    $("#appView")?.classList.remove("hidden");
+    showPage("dashboard");
+    updateTeacherUI();
+
+    try {
+        await loadPortalData();
+        renderAll();
+    } catch (error) {
+        console.error("Dashboard data loading failed:", error);
+        renderAll();
+        showToast("Dashboard opened, but some Supabase data could not be loaded.");
+        return;
+    }
+
+    showToast(state.localMode ? "Local mode: add Supabase keys for shared school data." : "Dashboard connected.");
+}
+
+async function loadPortalData() {
+    if (!supabaseClient) {
+        state.students = readLocal("students");
+        state.classes = readLocal("classes");
+        state.quizzes = readLocal("quizzes");
+        state.progress = readLocal("progress");
+        state.files = readLocal("files");
+        state.events = readLocal("events");
+        state.tickets = readLocal("tickets");
+        state.attendance = readLocal("attendance");
+        return;
+    }
+
+    const queries = await Promise.all([
+        supabaseClient.from("User").select("id,name,email,role,schoolId,classId").eq("role", "STUDENT"),
+        supabaseClient.from("SchoolClass").select("id,schoolId,grade,section,classTeacherId"),
+        supabaseClient.from("Game").select("id,title,description,difficulty,gameType,topicId,status,createdAt"),
+        supabaseClient.from("game_spec").select("id,slug,title,subject,topic,grade,difficulty,spec,status,created_at"),
+        supabaseClient.from("StudentProgress").select("id,studentId,lessonId,masteryScore,attempts,lastUpdated"),
+        supabaseClient.from("GameSession").select("id,studentId,gameId,score,accuracy,xpEarned,playedAt,completion"),
+        supabaseClient.from("game_play_session").select("id,game_slug,student_id,score,accuracy,completion,created_at"),
+        supabaseClient.from("calendar_events").select("*"),
+        supabaseClient.from("admin_tickets").select("*").order("created_at", { ascending: false })
+    ]);
+    state.classes = queries[1].data || [];
+    const classMap = new Map(
+        state.classes.map(item => [
+            String(item.id),
+            `${item.grade}${item.section ? ` ${item.section}` : ""}`
+        ])
+    );
+    state.students = (queries[0].data || []).map(student => ({
+        ...student,
+        class_name: classMap.get(String(student.classId)) || student.classId || ""
+    }));
+    const games = (queries[2].data || []).map(game => ({
+        ...game,
+        class_name: game.grade || "All Classes"
+    }));
+    const gameSpecs = (queries[3].data || []).map(game => ({
+        ...game,
+        class_name: game.grade || "All Classes",
+        description: game.spec?.description || game.topic,
+        question: game.spec?.question,
+        options: game.spec?.options,
+        correct: game.spec?.correct
+    }));
+    state.quizzes = [...games, ...gameSpecs];
+    state.progress = [
+        ...(queries[4].data || []).map(item => ({ ...item, score: item.masteryScore, created_at: item.lastUpdated })),
+        ...(queries[5].data || []).map(item => ({ ...item, xp: item.xpEarned, created_at: item.playedAt })),
+        ...(queries[6].data || []).map(item => ({ ...item, studentId: item.student_id, gameId: item.game_slug, xp: item.score, created_at: item.created_at }))
+    ];
+    state.events = queries[7].data || [];
+    state.tickets = queries[8].data || [];
+    const attendanceResult = await supabaseClient.from("Attendance").select("*");
+    state.attendance = attendanceResult.error ? [] : attendanceResult.data || [];
+    if (attendanceResult.error && !String(attendanceResult.error.message).toLowerCase().includes("does not exist")) console.warn(attendanceResult.error.message);
+    queries.forEach(result => { if (result.error) console.warn(result.error.message); });
+}
+
+function renderAll() {
+    updateClassSelector();
+    const students = filteredStudents();
+    const quizzes = filteredQuizzes();
+    $("#activeStudents").textContent = students.length;
+    $("#activeGames").textContent = quizzes.length;
+    $("#currentClassDisplay").textContent = state.selectedClass;
+    const mastery = students.map(student => Number(student.mastery || student.mastery_percentage || 0)).filter(Number.isFinite);
+    $("#averageMastery").textContent = `${mastery.length ? Math.round(mastery.reduce((a, b) => a + b, 0) / mastery.length) : 0}%`;
+    $("#totalXP").textContent = `${state.progress.reduce((total, item) => total + Number(item.xp || item.reward || item.credits || 0), 0)} RL-XP`;
+    renderStudentTable(students);
+    renderDashboardQuizzes(quizzes);
+    renderGamificationPage();
+    renderFiles();
+    renderCalendar();
+    renderAdminTickets();
+    renderAssessments();
+    renderAttendance();
+    renderXPChart();
+}
+
+function filteredStudents() {
+    if (state.selectedClass === "All Classes") return state.students;
+    return state.students.filter(student => classValue(student).toLowerCase() === state.selectedClass.toLowerCase());
+}
+
+function filteredQuizzes() {
+    if (state.selectedClass === "All Classes") return state.quizzes;
+    return state.quizzes.filter(quiz => String(quiz.class_name || quiz.className || "").toLowerCase() === state.selectedClass.toLowerCase());
+}
+
+function classValue(record) {
+    return String(record.class_name || record.className || record.class_section || record.grade || record.classId || "");
+}
+
+function updateClassSelector() {
+    const selector = $("#classSelector");
+    if (!selector) return;
+    const names = [...new Set([
+        ...state.classes.map(record => record.name || record.class_name || record.class_section),
+        ...state.students.map(classValue),
+        state.teacher?.className
+    ].filter(Boolean))].sort();
+    selector.innerHTML = `<option value="All Classes">All Classes</option>${names.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`).join("")}`;
+    selector.value = names.includes(state.selectedClass) ? state.selectedClass : "All Classes";
+}
+
+function renderStudentTable(students) {
+    const tbody = $("#studentTableBody");
+    if (!tbody) return;
+    if (!students.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">No student records returned from Supabase for this class.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = students.map(student => {
+        const mastery = Number(student.mastery || student.mastery_percentage || 0);
+        const id = student.id || student.student_id || "";
+        return `<tr>
+            <td><strong>${escapeHTML(student.name || student.full_name || "Student")}</strong></td>
+            <td>${escapeHTML(student.roll || student.roll_number || student.student_id || "")}</td>
+            <td><span class="badge-active">${escapeHTML(classValue(student))}</span></td>
+            <td><strong>${mastery}%</strong></td>
+            <td>${mastery < 50 ? "Needs support" : mastery >= 75 ? "Advanced" : "Developing"}</td>
+            <td><button class="secondary-btn sm" data-student-analysis="${escapeHTML(String(id))}">Analysis</button></td>
+        </tr>`;
+    }).join("");
+    $$('[data-student-analysis]').forEach(button => button.addEventListener("click", () => showStudentAnalysis(button.dataset.studentAnalysis)));
+}
+
+function renderDashboardQuizzes(quizzes) {
+    const container = $("#dashboardQuizList");
+    if (!container) return;
+    container.innerHTML = quizzes.length ? quizzes.slice(0, 5).map(quizCard).join("") : `<div class="empty-state">No games created for this class section yet.</div>`;
+    bindPlayButtons(container);
+}
+
+function renderGamificationPage() {
+    const grid = $("#gamificationGamesGrid");
+    if (!grid) return;
+    grid.innerHTML = state.quizzes.length ? state.quizzes.map(quizCard).join("") : `<div class="empty-state">No games in Supabase yet. Build the first game for a class section.</div>`;
+    bindPlayButtons(grid);
+    const mastery = filteredStudents().map(student => Number(student.mastery || 0)).filter(Number.isFinite);
+    $("#qState0").textContent = `Action: Easy game · ${mastery.filter(value => value < 50).length} students`;
+    $("#qState1").textContent = `Action: Medium game · ${mastery.filter(value => value >= 50 && value < 75).length} students`;
+    $("#qState2").textContent = `Action: Hard game · ${mastery.filter(value => value >= 75).length} students`;
+}
+
+function renderAssessments() {
+    const body = $("#assessmentTableBody");
+    if (!body) return;
+    const quizzes = filteredQuizzes();
+    if (!quizzes.length) {
+        body.innerHTML = `<tr><td colspan="7" class="empty-state">No assessment records returned from Supabase.</td></tr>`;
+        return;
+    }
+    body.innerHTML = quizzes.map(quiz => {
+        const sessions = state.progress.filter(item => String(item.gameId || item.game_id) === String(quiz.id));
+        const average = sessions.length ? Math.round(sessions.reduce((sum, item) => sum + Number(item.score || 0), 0) / sessions.length) : 0;
+        return `<tr>
+            <td><strong>${escapeHTML(quiz.title || "Untitled assessment")}</strong></td>
+            <td>${escapeHTML(quiz.subject || "STEM")}</td>
+            <td>${escapeHTML(quiz.class_name || "All Classes")}</td>
+            <td>${sessions.length}</td>
+            <td>${sessions.length ? `${average}%` : "No submissions"}</td>
+            <td><span class="badge-active">${escapeHTML(quiz.status || "READY")}</span></td>
+            <td><button class="secondary-btn sm" data-assessment-play="${escapeHTML(String(quiz.id))}">Open</button></td>
+        </tr>`;
+    }).join("");
+    $$('[data-assessment-play]').forEach(button => button.addEventListener("click", () => playQuiz(button.dataset.assessmentPlay)));
+}
+
+function renderAttendance() {
+    const body = $("#attendanceTableBody");
+    if (!body) return;
+    const students = filteredStudents();
+    if (!students.length) {
+        body.innerHTML = `<tr><td colspan="5" class="empty-state">No student records returned from Supabase.</td></tr>`;
+        updateAttendanceCounts();
+        return;
+    }
+    body.innerHTML = students.map(student => {
+        const studentId = student.id || "";
+        const record = state.attendance.find(item => String(item.studentId || item.student_id) === String(studentId));
+        const present = record ? record.status !== "ABSENT" : true;
+        return `<tr>
+            <td><strong>${escapeHTML(student.name || "Student")}</strong></td>
+            <td>${escapeHTML(studentId)}</td>
+            <td>${escapeHTML(classValue(student))}</td>
+            <td>${record?.streak || 0} days</td>
+            <td><button class="attendance-toggle ${present ? "is-present" : "is-absent"}" data-attendance-student="${escapeHTML(String(studentId))}" data-present="${present}">${present ? "Present" : "Absent"}</button></td>
+        </tr>`;
+    }).join("");
+    $$('[data-attendance-student]').forEach(button => button.addEventListener("click", () => {
+        const present = button.dataset.present !== "true";
+        button.dataset.present = String(present);
+        button.textContent = present ? "Present" : "Absent";
+        button.classList.toggle("is-present", present);
+        button.classList.toggle("is-absent", !present);
+        updateAttendanceCounts();
+    }));
+    updateAttendanceCounts();
+}
+
+function updateAttendanceCounts() {
+    const buttons = $$('[data-attendance-student]');
+    const present = Array.from(buttons).filter(button => button.dataset.present === "true").length;
+    if ($("#presentCount")) $("#presentCount").textContent = present;
+    if ($("#absentCount")) $("#absentCount").textContent = buttons.length - present;
+}
+
+async function saveAttendance() {
+    const buttons = Array.from($$('[data-attendance-student]'));
+    if (!buttons.length) return showToast("No students available for this class.");
+    const attendanceTableNotice = $("#attendanceSchemaNotice");
+    if (!supabaseClient) {
+        const records = buttons.map(button => ({ studentId: button.dataset.attendanceStudent, status: button.dataset.present === "true" ? "PRESENT" : "ABSENT", date: new Date().toISOString().slice(0, 10) }));
+        writeLocal("attendance", records);
+        state.attendance = records;
+        showToast("Attendance saved locally. Connect Supabase to share it with the school.");
+        return;
+    }
+    const records = buttons.map(button => ({ studentId: button.dataset.attendanceStudent, teacherId: state.teacher?.id, status: button.dataset.present === "true" ? "PRESENT" : "ABSENT", date: new Date().toISOString().slice(0, 10) }));
+    const result = await supabaseClient.from("Attendance").upsert(records, { onConflict: "studentId,date" });
+    if (result.error) {
+        attendanceTableNotice.classList.remove("hidden");
+        attendanceTableNotice.textContent = "Attendance UI is ready, but your schema has no public.\"Attendance\" table yet. Add that table to persist this register.";
+        showToast("Attendance table is not available in Supabase.");
+        return;
+    }
+    await loadPortalData();
+    renderAttendance();
+    showToast("Attendance register saved.");
+}
+
+function quizCard(quiz) {
+    return `<div class="quiz-card">
+        <span class="quiz-meta">${escapeHTML(quiz.subject || "STEM")} · ${escapeHTML(quiz.class_name || quiz.className || "All Classes")} · ${escapeHTML(quiz.difficulty || "Adaptive")}</span>
+        <h4>${escapeHTML(quiz.title || "Untitled game")}</h4>
+        <p>${escapeHTML(quiz.description || quiz.question || "Teacher-created learning game")}</p>
+        <button class="primary-btn sm" data-play-quiz="${escapeHTML(String(quiz.id))}">Play game</button>
+    </div>`;
+}
+
+function bindPlayButtons(container) {
+    container.querySelectorAll("[data-play-quiz]").forEach(button => button.addEventListener("click", () => playQuiz(button.dataset.playQuiz)));
+}
+
+function openQuizModal() {
+    const form = $("#quizForm");
+    if (form) {
+        form.elements.className.value = state.selectedClass === "All Classes" ? state.teacher?.className || "" : state.selectedClass;
+        form.elements.subject.value = state.teacher?.subject || "";
+    }
+    openModal("quizModal");
+}
+
+async function saveQuiz(event) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const record = {
+        title: String(data.get("title")).trim(),
+        class_name: String(data.get("className")).trim(),
+        subject: String(data.get("subject")).trim(),
+        difficulty: data.get("difficulty"),
+        question: String(data.get("question")).trim(),
+        options: { A: data.get("optA"), B: data.get("optB"), C: data.get("optC"), D: data.get("optD") },
+        correct: data.get("correct"),
+        teacher_id: state.teacher?.id || null
+    };
+    let saved;
+    if (supabaseClient) {
+        const gameSpec = {
+            slug: `teacher-${state.teacher.id}-${Date.now()}`,
+            title: record.title,
+            subject: record.subject,
+            topic: record.class_name,
+            grade: record.class_name,
+            difficulty: record.difficulty === "Easy" ? "EASY" : record.difficulty === "Hard" ? "HARD" : "MEDIUM",
+            spec: {
+                question: record.question,
+                options: record.options,
+                correct: record.correct,
+                teacherId: state.teacher.id
+            },
+            status: "READY"
+        };
+        const result = await supabaseClient.from("game_spec").insert(gameSpec).select().single();
+        if (result.error) {
+            showToast(`Game could not be saved: ${result.error.message}`);
+            return;
+        }
+        saved = result.data;
+    } else {
+        saved = await saveRecord("games", record, "quizzes");
+    }
+    if (!saved) return;
+    closeModal("quizModal");
+    event.currentTarget.reset();
+    await loadPortalData();
+    renderAll();
+    showToast("Game saved for the selected class.");
+}
+
+function openStudentModal() {
+    const form = $("#studentForm");
+    if (form) form.elements.className.value = state.selectedClass === "All Classes" ? state.teacher?.className || "" : state.selectedClass;
+    openModal("studentModal");
+}
+
+async function saveStudent(event) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const record = {
+        name: String(data.get("name")).trim(),
+        roll: String(data.get("roll")).trim(),
+        class_name: String(data.get("className")).trim(),
+        mastery: Number(data.get("mastery"))
+    };
+    const saved = await saveRecord("students", record, "students");
+    if (!saved) return;
+    closeModal("studentModal");
+    event.currentTarget.reset();
+    await loadPortalData();
+    renderAll();
+    showToast("Student saved.");
+}
+
+async function saveRecord(table, record, localName) {
+    if (supabaseClient) {
+        const { data, error } = await supabaseClient.from(table).insert(record).select().single();
+        if (error) {
+            showToast(`Could not save: ${error.message}`);
+            return false;
+        }
+        return data;
+    }
+    const records = readLocal(localName);
+    records.unshift({ ...record, id: `local-${Date.now()}` });
+    writeLocal(localName, records);
+    return record;
+}
+
+async function playQuiz(id) {
+    const quiz = state.quizzes.find(item => String(item.id) === String(id));
+    if (!quiz) return;
+    $("#playQuizTitle").textContent = quiz.title || "Learning game";
+    $("#playQuizQuestion").textContent = quiz.question || "No question text was stored.";
+    const studentSelect = $("#playStudentSelect");
+    const students = filteredStudents();
+    studentSelect.innerHTML = students.length
+        ? students.map(student => `<option value="${escapeHTML(String(student.id))}">${escapeHTML(student.name || student.full_name || "Student")}</option>`).join("")
+        : `<option value="">No students in selected class</option>`;
+    studentSelect.disabled = !students.length;
+    const options = quiz.options || {};
+    $("#playQuizOptions").innerHTML = Object.entries(options).map(([key, value]) => `<button class="secondary-btn" data-answer="${key}"><strong>${key}.</strong> ${escapeHTML(value || "")}</button>`).join("");
+    $("#rlRewardFeedback").classList.add("hidden");
+    openModal("playModal");
+    $$("[data-answer]").forEach(button => button.addEventListener("click", () => submitAnswer(quiz, button.dataset.answer)));
+}
+
+async function submitAnswer(quiz, answer) {
+    const correct = answer === quiz.correct;
+    const reward = correct ? 10 : 2;
+    const studentId = $("#playStudentSelect").value;
+    const feedback = $("#rlRewardFeedback");
+    feedback.classList.remove("hidden");
+    feedback.textContent = correct ? `Correct. Student reward: ${reward} RL-XP.` : `Game completed. Participation reward: ${reward} RL-XP.`;
+    const progress = { game_id: quiz.id, teacher_id: state.teacher?.id || null, score: correct ? 100 : 50, reward, credits: reward, created_at: new Date().toISOString() };
+    if (!studentId) {
+        feedback.textContent = "Select a student before recording this game attempt.";
+        return;
+    }
+
+    if (supabaseClient && quiz.lessonId) {
+        await supabaseClient.from("GameSession").insert({
+            id: crypto.randomUUID(),
+            studentId,
+            lessonId: quiz.lessonId,
+            gameId: quiz.id,
+            score: progress.score,
+            accuracy: progress.score / 100,
+            timeSpentSec: 0,
+            difficultyLevel: quiz.difficulty === "Hard" ? 3 : quiz.difficulty === "Medium" ? 2 : 1,
+            xpEarned: reward,
+            completion: 1,
+            status: "COMPLETED"
+        });
+    } else if (supabaseClient) {
+        const sessionResult = await supabaseClient.from("game_play_session").insert({
+            game_slug: quiz.slug || String(quiz.id),
+            player_key: studentId,
+            student_id: studentId,
+            difficulty: String(quiz.difficulty || "EASY").toUpperCase(),
+            score: progress.score,
+            accuracy: progress.score / 100,
+            attempts: 1,
+            completion: true,
+            concepts_mastered: correct ? [quiz.subject || quiz.topic || "STEM"] : [],
+            concepts_misunderstood: correct ? [] : [quiz.subject || quiz.topic || "STEM"]
+        });
+        if (sessionResult.error) {
+            feedback.textContent = `Game result could not be recorded: ${sessionResult.error.message}`;
+            return;
+        }
+    } else if (!supabaseClient) {
+        progress.student_id = studentId;
+        state.progress.unshift(progress);
+        writeLocal("progress", state.progress);
+    }
+    await loadPortalData();
+    renderAll();
+}
+
+function initializeFileUpload() {
+    const dropzone = $("#dropzone");
+    const input = $("#fileInput");
+    if (!dropzone || !input) return;
+    dropzone.addEventListener("click", () => input.click());
+    dropzone.addEventListener("dragover", event => event.preventDefault());
+    dropzone.addEventListener("drop", event => { event.preventDefault(); uploadFiles(event.dataTransfer.files); });
+    input.addEventListener("change", event => uploadFiles(event.target.files));
+}
+
+async function uploadFiles(fileList) {
+    for (const file of Array.from(fileList)) {
+        if (supabaseClient) {
+            const path = `${state.teacher.id}/${Date.now()}-${file.name}`;
+            const upload = await supabaseClient.storage.from("classroom-files").upload(path, file);
+            if (upload.error) { showToast(`Upload failed: ${upload.error.message}`); continue; }
+            await supabaseClient.from("classroom_files").insert({ teacher_id: state.teacher.id, name: file.name, path, size: file.size, class_name: state.selectedClass });
+        } else {
+            const files = readLocal("files");
+            files.unshift({ name: file.name, size: file.size, class_name: state.selectedClass, created_at: new Date().toISOString() });
+            writeLocal("files", files);
+        }
+    }
+    await loadPortalData();
+    renderFiles();
+    showToast("Classroom files updated.");
+}
+
+function renderFiles() {
+    const container = $("#fileListContainer");
+    if (!container) return;
+    container.innerHTML = state.files.length ? state.files.map(file => `<div class="file-card"><i data-lucide="file-text"></i><span>${escapeHTML(file.name)}</span><small>${Math.round(Number(file.size || 0) / 1024)} KB</small></div>`).join("") : `<div class="empty-state">No files returned from Supabase.</div>`;
+    if (window.lucide) lucide.createIcons();
+}
+
+function initializeCalendar() {
+    $("#prevMonthBtn")?.addEventListener("click", () => { state.calendarDate.setMonth(state.calendarDate.getMonth() - 1); renderCalendar(); });
+    $("#nextMonthBtn")?.addEventListener("click", () => { state.calendarDate.setMonth(state.calendarDate.getMonth() + 1); renderCalendar(); });
+    $("#addEventBtn")?.addEventListener("click", addCalendarEvent);
+}
+
+async function addCalendarEvent() {
+    const title = prompt("Event title");
+    if (!title) return;
+    const date = prompt("Date (YYYY-MM-DD)", new Date().toISOString().slice(0, 10));
+    if (!date) return;
+    const record = { title, event_date: date, teacher_id: state.teacher?.id || null, class_name: state.selectedClass };
+    await saveRecord("calendar_events", record, "events");
+    await loadPortalData();
+    renderCalendar();
+}
+
+function renderCalendar() {
+    const grid = $("#calendarGrid");
+    const heading = $("#calendarMonthYear");
+    if (!grid || !heading) return;
+    const date = state.calendarDate;
+    heading.textContent = date.toLocaleString("default", { month: "long", year: "numeric" });
+    grid.innerHTML = "";
+    const first = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    const total = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    for (let index = 0; index < first; index += 1) grid.appendChild(document.createElement("div"));
+    for (let day = 1; day <= total; day += 1) {
+        const cell = document.createElement("div");
+        cell.className = "calendar-day";
+        const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const events = state.events.filter(event => String(event.event_date || event.date || "").startsWith(iso));
+        cell.innerHTML = `<strong>${day}</strong>${events.map(event => `<small>${escapeHTML(event.title)}</small>`).join("")}`;
+        grid.appendChild(cell);
+    }
+}
+
+function initializeAdminTickets() {
+    $("#quickAdminBtn")?.addEventListener("click", () => showPage("admin"));
+    $("#adminQueryForm")?.addEventListener("submit", async event => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        const record = { type: data.get("type"), subject: data.get("subject"), message: data.get("message"), teacher_id: state.teacher?.id || null, status: "Pending" };
+        await saveRecord("admin_tickets", record, "tickets");
+        event.currentTarget.reset();
+        await loadPortalData();
+        renderAdminTickets();
+        showToast("Admin request sent.");
+    });
+}
+
+function renderAdminTickets() {
+    const container = $("#adminMessageList");
+    if (!container) return;
+    container.innerHTML = state.tickets.length ? state.tickets.map(ticket => `<article class="ticket-card"><header><strong>${escapeHTML(ticket.type)}</strong><span>${escapeHTML(ticket.status || "Pending")}</span></header><h4>${escapeHTML(ticket.subject)}</h4><p>${escapeHTML(ticket.message)}</p></article>`).join("") : `<div class="empty-state">No admin messages returned from Supabase.</div>`;
+}
+
+function showStudentAnalysis(studentId) {
+    const student = state.students.find(item => String(item.id) === String(studentId));
+    if (!student) return;
+    const records = state.progress.filter(item => String(item.student_id || item.studentId) === String(studentId));
+    const average = records.length ? Math.round(records.reduce((sum, item) => sum + Number(item.score || 0), 0) / records.length) : Number(student.mastery || 0);
+    const modal = document.createElement("div");
+    modal.className = "modal open";
+    modal.innerHTML = `<div class="modal-content"><button class="modal-close">×</button><h2>${escapeHTML(student.name || "Student")} analysis</h2><p>Class: ${escapeHTML(classValue(student))}</p><div class="student-analysis"><strong>${average}%</strong><span>Average recorded performance</span><strong>${records.length}</strong><span>Recorded game attempts</span></div><p>${records.length ? "Analysis is calculated from stored student progress." : "No progress records have been returned for this student yet."}</p></div>`;
+    document.body.appendChild(modal);
+    modal.querySelector(".modal-close").addEventListener("click", () => modal.remove());
+}
+
+function initializeChatbot() {
+    $("#chatbotForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        const input = $("#chatbotInput");
+        if (!input) return;
+        const text = input.value.trim();
+        if (!text) return;
+        addChatMessage(text, "user");
+        addChatMessage(`I can report ${state.students.length} students, ${state.quizzes.length} games, and ${state.progress.length} progress records from this portal.`, "bot");
+        input.value = "";
+    });
+    $("#chatbotButton")?.addEventListener("click", () => $("#chatbot")?.classList.add("open"));
+    $("#closeChatbot")?.addEventListener("click", () => $("#chatbot")?.classList.remove("open"));
+}
+
+function addChatMessage(text, type) {
+    const container = $("#chatMessages");
+    if (!container) return;
+    const message = document.createElement("div");
+    message.className = `${type}-message`;
+    message.textContent = text;
+    container.appendChild(message);
+}
+
+function showPage(page) {
+    $$(".page").forEach(item => item.classList.remove("active-page"));
+    $(`#${page}Page`)?.classList.add("active-page");
+    $("#pageTitle").textContent = page.charAt(0).toUpperCase() + page.slice(1);
+}
+
+function updateTeacherUI() {
+    const teacher = state.teacher;
+    const name = teacher?.name || teacher?.email || "Teacher";
+    $("#teacherName").textContent = name;
+    $("#teacherDetails").textContent = `${teacher?.role || "Teacher"} · ${teacher?.className || "All Classes"}${teacher?.subject ? ` (${teacher.subject})` : ""}`;
+    $("#profileAvatar").textContent = name.split(" ").map(word => word[0]).join("").slice(0, 2).toUpperCase();
+}
+
+function editPreferences() {
+    const className = prompt("Enter the class section to manage (example: 7th B)", state.teacher?.className || "");
+    if (!className) return;
+    state.teacher.className = className.trim();
+    localStorage.setItem("eduadapt_teacher", JSON.stringify(state.teacher));
+    updateTeacherUI();
+    updateClassSelector();
+    showToast("Class preference updated.");
+}
+
+async function logoutTeacher() {
+    if (supabaseClient) await supabaseClient.auth.signOut();
+    localStorage.removeItem("eduadapt_teacher");
+    localStorage.removeItem("eduadapt_table_session");
+    localStorage.removeItem("eduadapt_demo_mode");
+    location.reload();
+}
+
+function toggleTheme() {
+    document.body.classList.toggle("dark");
+    localStorage.setItem("eduadapt_dark_mode", document.body.classList.contains("dark"));
+    $("#darkModeStatus").textContent = document.body.classList.contains("dark") ? "ON" : "OFF";
+    renderXPChart();
+}
+
+function applyTheme() {
+    const dark = localStorage.getItem("eduadapt_dark_mode") === "true";
+    document.body.classList.toggle("dark", dark);
+    if ($("#darkModeStatus")) $("#darkModeStatus").textContent = dark ? "ON" : "OFF";
+}
+
+function renderXPChart() {
+    const canvas = $("#xpChart");
+    if (!canvas || !window.Chart) return;
+    if (state.chart) state.chart.destroy();
+    const records = state.progress.filter(item => state.selectedClass === "All Classes" || item.class_name === state.selectedClass);
+    const grouped = {};
+    records.forEach(record => {
+        const date = String(record.created_at || record.date || "").slice(0, 10);
+        if (date) grouped[date] = (grouped[date] || 0) + Number(record.reward || record.xp || record.credits || record.score || 0);
+    });
+    const labels = Object.keys(grouped).sort();
+    const values = labels.map(label => grouped[label]);
+    const empty = !labels.length;
+    state.chart = new Chart(canvas, { type: "line", data: { labels: empty ? ["No recorded progress"] : labels, datasets: [{ label: "Recorded RL progress", data: empty ? [0] : values, borderColor: "#00a982", backgroundColor: "rgba(0,169,130,.12)", fill: true, tension: .35 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } } });
+}
+
+function openModal(id) { $(`#${id}`)?.classList.add("open"); }
+function closeModal(id) { $(`#${id}`)?.classList.remove("open"); }
+function showToast(message) { const toast = $("#toast"); if (!toast) return; $("#toastMsg").textContent = message; toast.classList.remove("hidden"); setTimeout(() => toast.classList.add("hidden"), 3500); }
+function readLocal(name) { try { return JSON.parse(localStorage.getItem(localKey(name)) || "[]"); } catch (error) { return []; } }
+function writeLocal(name, value) { localStorage.setItem(localKey(name), JSON.stringify(value)); }
+function loadLocalStore() {}
+function escapeHTML(value) { return String(value ?? "").replace(/[&<>\"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#039;" }[character])); }

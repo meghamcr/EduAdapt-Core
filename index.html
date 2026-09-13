@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduAdapt - Gamified Adaptive Learning Portal</title>
+    
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Supabase & Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- =========================================================
+         1. LOGIN SLIDE / AUTHENTICATION VIEW
+    ========================================================== -->
+    <div id="loginView" class="login-body">
+        <main class="login-shell">
+            <section class="login-intro">
+                <div class="login-brand-mark">EA</div>
+                <p class="login-kicker">EDUADAPT / TEACHER PORTAL</p>
+                <h1>Adaptive Gamification Hub</h1>
+                <p class="login-description">Sign in to manage your assigned class, configure Q-Learning AI quizzes, and track real-time student mastery.</p>
+                <div class="login-feature-list">
+                    <span>Reinforcement Learning Adaptive Engine</span>
+                    <span>Live Class Dynamics (e.g. 7th B, 8th A)</span>
+                    <span>Direct Admin Support & Rewards Workflow</span>
+                </div>
+            </section>
+
+            <section class="login-card">
+                <div class="login-card-heading">
+                    <span class="eyebrow">TEACHER PORTAL LOGIN</span>
+                    <h2>Sign in to EduAdapt</h2>
+                    <p>Enter your profile details to dynamically filter the portal.</p>
+                </div>
+
+                <form id="loginForm" class="login-form">
+                    <label>
+                        Teacher Name
+                        <input name="teacherName" type="text" placeholder="e.g. Riya Anand" required>
+                    </label>
+
+                    <label>
+                        School ID
+                        <input name="schoolId" type="text" placeholder="e.g. SCH-7082" required>
+                    </label>
+
+                    <label>
+                        School email
+                        <input name="email" type="email" placeholder="Only needed when Supabase is connected" autocomplete="email">
+                    </label>
+
+                    <label>
+                        Password
+                        <input name="password" type="password" minlength="6" placeholder="At least 6 characters" autocomplete="current-password" required>
+                    </label>
+
+                    <div class="login-form-row">
+                        <label>
+                            Teacher Role
+                            <select name="role" required>
+                                <option value="Class Teacher">Class Teacher</option>
+                                <option value="Subject Teacher">Subject Teacher</option>
+                            </select>
+                        </label>
+                        <label>
+                            Class Allotted
+                            <input name="className" type="text" placeholder="e.g. 7th B" required>
+                        </label>
+                    </div>
+
+                    <label>
+                        Subject Assignment
+                        <input name="subject" type="text" placeholder="e.g. Mathematics / Physics">
+                    </label>
+
+                    <button class="login-submit" type="submit">Access Dashboard →</button>
+                    <p class="login-help">Without Supabase keys: enter any teacher name, school ID, and a password of 6 or more characters.</p>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- =========================================================
+         2. MAIN TEACHER DASHBOARD PORTAL
+    ========================================================== -->
+    <div id="appView" class="app hidden">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon"><i data-lucide="gamepad-2"></i></div>
+                <div class="brand-text">
+                    <h1>EduAdapt</h1>
+                    <span>RL LEARNING LAB</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-page="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>DASHBOARD</span>
+                </button>
+                <button class="nav-item" data-page="gamification">
+                    <i data-lucide="brain-circuit"></i>
+                    <span>RL GAMIFICATION</span>
+                </button>
+                <button class="nav-item" data-page="classroom">
+                    <i data-lucide="folder-up"></i>
+                    <span>CLASSROOM FILES</span>
+                </button>
+                <button class="nav-item" data-page="calendar">
+                    <i data-lucide="calendar-days"></i>
+                    <span>CALENDAR</span>
+                </button>
+                <button class="nav-item" data-page="admin">
+                    <i data-lucide="message-square-plus"></i>
+                    <span>ADMIN QUERY &amp; REWARDS</span>
+                </button>
+                <button class="nav-item" data-page="assessments">
+                    <i data-lucide="badge-check"></i>
+                    <span>ASSESSMENTS</span>
+                </button>
+                <button class="nav-item" data-page="attendance">
+                    <i data-lucide="calendar-check"></i>
+                    <span>ATTENDANCE</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-bottom">
+                <div class="class-level">
+                    <div class="level-heading">
+                        <span>Class XP Level</span>
+                        <strong id="teacherLevel">LVL 1</strong>
+                    </div>
+                    <div class="level-bar"><div id="levelProgress" style="width: 45%;"></div></div>
+                </div>
+
+                <button class="sidebar-action" id="editPrefBtn">
+                    <i data-lucide="sliders"></i>
+                    <span>Class Preferences</span>
+                </button>
+                <button class="sidebar-action dark-mode-action" id="darkModeBtn">
+                    <i data-lucide="moon"></i>
+                    <span>Dark Mode</span>
+                    <strong id="darkModeStatus">OFF</strong>
+                </button>
+                <button class="sidebar-action logout-btn" id="logoutBtn">
+                    <i data-lucide="log-out"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main">
+            <!-- TOP BAR -->
+            <header class="topbar">
+                <div class="breadcrumb">
+                    <span>EduAdapt</span>
+                    <i data-lucide="chevron-right"></i>
+                    <strong id="pageTitle">Dashboard</strong>
+                </div>
+
+                <div class="topbar-center">
+                    <div class="search-box">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="globalSearch" placeholder="Search students, topics, quizzes...">
+                    </div>
+                    <!-- DYNAMIC CLASS SELECTOR / HEADER -->
+                    <div class="class-selector-wrapper">
+                        <select id="classSelector" class="class-selector-dropdown">
+                            <!-- Populated dynamically based on Teacher inputs -->
+                        </select>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <button class="icon-btn" title="Admin Support" id="quickAdminBtn">
+                        <i data-lucide="help-circle"></i>
+                    </button>
+                    <div class="profile-divider"></div>
+                    <div class="profile-button">
+                        <div class="profile-avatar" id="profileAvatar">--</div>
+                        <div class="profile-info">
+                            <strong id="teacherName">Teacher Name</strong>
+                            <span id="teacherDetails">Role · Class</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- SECTION PAGES -->
+            <section class="content">
+                
+                <!-- 1. DASHBOARD PAGE -->
+                <div class="page active-page" id="dashboardPage">
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon students-icon"><i data-lucide="users-round"></i></div>
+                            <div>
+                                <span class="stat-label">TOTAL STUDENTS</span>
+                                <strong class="stat-number" id="activeStudents">0</strong>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon games-icon"><i data-lucide="gamepad-2"></i></div>
+                            <div>
+                                <span class="stat-label">ACTIVE QUIZZES</span>
+                                <strong class="stat-number" id="activeGames">0</strong>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon mastery-icon"><i data-lucide="target"></i></div>
+                            <div>
+                                <span class="stat-label">AVG CLASS MASTERY</span>
+                                <strong class="stat-number" id="averageMastery">0%</strong>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon xp-icon"><i data-lucide="award"></i></div>
+                            <div>
+                                <span class="stat-label">REINFORCEMENT SCORE</span>
+                                <strong class="stat-number" id="totalXP">0 RL-XP</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="analytics-grid">
+                        <div class="panel graph-panel">
+                            <div class="panel-header">
+                                <div>
+                                    <h2>Class Learning Curve (RL Progression)</h2>
+                                    <p>Adapts quizzes based on real-time response accuracy</p>
+                                </div>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="xpChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="panel games-panel">
+                            <div class="panel-header">
+                                <h2>Active Quizzes</h2>
+                                <button class="primary-btn sm" id="createQuizQuickBtn"><i data-lucide="plus"></i> New Quiz</button>
+                            </div>
+                            <div id="dashboardQuizList" class="quiz-stack">
+                                <div class="empty-state">No quizzes created for this class section yet.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel student-progress-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h2>Enrolled Students (<span id="currentClassDisplay">All</span>)</h2>
+                                <p>Perform actions or view RL mastery scores</p>
+                            </div>
+                            <button class="secondary-btn" id="addStudentBtn"><i data-lucide="user-plus"></i> Add Student</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <table class="student-table">
+                                <thead>
+                                    <tr>
+                                        <th>Student Name</th>
+                                        <th>Roll / ID</th>
+                                        <th>Class Section</th>
+                                        <th>Mastery</th>
+                                        <th>RL State</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentTableBody">
+                                    <tr><td colspan="6" class="empty-state">No student records added yet.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. GAMIFICATION & RL ENGINE PAGE -->
+                <div class="page" id="gamificationPage">
+                    <div class="page-card">
+                        <div class="page-heading-row">
+                            <div>
+                                <span class="page-eyebrow">REINFORCEMENT LEARNING ALGORITHM</span>
+                                <h1>Gamification &amp; Adaptive RL Engine</h1>
+                                <p>Creates customized quiz pathways by evaluating Q-Table values for each student performance state.</p>
+                            </div>
+                            <button class="primary-btn" id="openQuizModalBtn"><i data-lucide="plus-circle"></i> Build New Quiz</button>
+                        </div>
+
+                        <!-- RL ALGORITHM VISUALIZER CONTAINER -->
+                        <div class="rl-agent-card">
+                            <div class="rl-header">
+                                <i data-lucide="cpu"></i>
+                                <div>
+                                    <h3>Q-Learning Agent Status: <span class="badge-active">ACTIVE</span></h3>
+                                    <p>Formula: $Q(s,a) \leftarrow Q(s,a) + \alpha [R + \gamma \max Q(s',a') - Q(s,a)]$</p>
+                                </div>
+                            </div>
+                            <div class="rl-matrix-grid">
+                                <div class="rl-state-box">
+                                    <span>State 0 (Low Mastery &lt;50%)</span>
+                                    <strong id="qState0">Action: Easy Quiz (Q: 0.85)</strong>
+                                </div>
+                                <div class="rl-state-box">
+                                    <span>State 1 (Med Mastery 50-75%)</span>
+                                    <strong id="qState1">Action: Medium Quiz (Q: 0.60)</strong>
+                                </div>
+                                <div class="rl-state-box">
+                                    <span>State 2 (High Mastery &gt;75%)</span>
+                                    <strong id="qState2">Action: Hard Quiz (Q: 0.92)</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h2 class="section-title">Class Quiz Repository</h2>
+                        <div id="gamificationGamesGrid" class="gamification-game-grid">
+                            <div class="empty-state">No quizzes available in repository.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. INTERACTIVE CLASSROOM & FILE UPLOADER -->
+                <div class="page" id="classroomPage">
+                    <div class="page-card">
+                        <span class="page-eyebrow">INTERACTIVE CLASSROOM RESOURCES</span>
+                        <h1>Resource Center &amp; Assignments</h1>
+                        <p>Upload worksheets, notes, and study material directly to your class space.</p>
+
+                        <div class="upload-dropzone" id="dropzone">
+                            <i data-lucide="cloud-upload" class="upload-icon"></i>
+                            <h3>Drag &amp; drop files here, or click to browse</h3>
+                            <p>Supports PDFs, Documents, Slides, and Images</p>
+                            <input type="file" id="fileInput" multiple class="hidden-file-input">
+                        </div>
+
+                        <h2 class="section-title">Uploaded Class Documents</h2>
+                        <div id="fileListContainer" class="file-grid">
+                            <div class="empty-state">No files uploaded yet.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. WORKING CALENDAR PAGE -->
+                <div class="page" id="calendarPage">
+                    <div class="page-card">
+                        <div class="page-heading-row">
+                            <div>
+                                <h1>Academic Calendar &amp; Schedule</h1>
+                                <p>Manage upcoming quizzes, exams, and class events.</p>
+                            </div>
+                            <button class="primary-btn" id="addEventBtn"><i data-lucide="calendar-plus"></i> Add Event</button>
+                        </div>
+                        <div class="calendar-wrapper">
+                            <div class="calendar-header">
+                                <button id="prevMonthBtn" class="icon-btn"><i data-lucide="chevron-left"></i></button>
+                                <h2 id="calendarMonthYear">Month Year</h2>
+                                <button id="nextMonthBtn" class="icon-btn"><i data-lucide="chevron-right"></i></button>
+                            </div>
+                            <div class="calendar-days-header">
+                                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                            </div>
+                            <div class="calendar-grid" id="calendarGrid"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. DIRECT ADMIN SUPPORT & REWARDS QUERY PAGE -->
+                <div class="page" id="adminPage">
+                    <div class="page-card">
+                        <span class="page-eyebrow">DIRECT COMMUNICATION CHANNEL</span>
+                        <h1>Admin Support &amp; Rewards Request</h1>
+                        <p>Send messages, query administration, or request RL Gamification student rewards directly.</p>
+
+                        <div class="admin-grid">
+                            <form id="adminQueryForm" class="admin-form">
+                                <h3>New Ticket / Query</h3>
+                                <label>
+                                    Request Type
+                                    <select name="type" required>
+                                        <option value="Reward Approval">Student Gamification Reward Request</option>
+                                        <option value="Technical Issue">Technical / Platform Query</option>
+                                        <option value="Class Schedule Change">Class Schedule / Roster Modification</option>
+                                    </select>
+                                </label>
+                                <label>
+                                    Subject / Title
+                                    <input name="subject" type="text" placeholder="e.g. Approve Badge Rewards for 7th B" required>
+                                </label>
+                                <label>
+                                    Message Details
+                                    <textarea name="message" rows="4" placeholder="Explain your request or query in detail..." required></textarea>
+                                </label>
+                                <button type="submit" class="primary-btn"><i data-lucide="send"></i> Submit Request to Admin</button>
+                            </form>
+
+                            <div class="admin-history">
+                                <h3>Communication History</h3>
+                                <div id="adminMessageList" class="ticket-list">
+                                    <div class="empty-state">No ticket requests submitted yet.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page" id="assessmentsPage">
+                    <div class="page-card">
+                        <div class="page-heading-row">
+                            <div>
+                                <span class="page-eyebrow">SUPABASE GAME RESULTS</span>
+                                <h1>Assessments &amp; Quizzes</h1>
+                                <p>Review real game scores and create an assessment for the selected class.</p>
+                            </div>
+                            <button class="primary-btn" id="createAssessmentBtn"><i data-lucide="plus"></i> Create Assessment</button>
+                        </div>
+                        <div class="assessment-table-wrap">
+                            <table class="student-table">
+                                <thead><tr><th>Assessment Title</th><th>Subject</th><th>Class</th><th>Submissions</th><th>Average Score</th><th>Status</th><th>Action</th></tr></thead>
+                                <tbody id="assessmentTableBody"><tr><td colspan="7" class="empty-state">No assessment records returned from Supabase.</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="page" id="attendancePage">
+                    <div class="page-card">
+                        <div class="page-heading-row">
+                            <div>
+                                <span class="page-eyebrow">CLASSROOM REGISTER</span>
+                                <h1>Classroom Attendance Register</h1>
+                                <p>Record daily student attendance and track attendance percentages.</p>
+                            </div>
+                            <div class="attendance-actions">
+                                <span class="attendance-tag present-tag">Present: <strong id="presentCount">0</strong></span>
+                                <span class="attendance-tag absent-tag">Absent: <strong id="absentCount">0</strong></span>
+                                <button class="primary-btn" id="saveAttendanceBtn">Save Register</button>
+                            </div>
+                        </div>
+                        <div id="attendanceSchemaNotice" class="schema-notice hidden"></div>
+                        <div class="table-wrapper">
+                            <table class="student-table attendance-table">
+                                <thead><tr><th>Student Name</th><th>Student ID</th><th>Class</th><th>Attendance Streak</th><th>Status Toggle</th></tr></thead>
+                                <tbody id="attendanceTableBody"><tr><td colspan="5" class="empty-state">No student records returned from Supabase.</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </main>
+    </div>
+
+    <!-- =========================================================
+         MODALS
+    ========================================================== -->
+    <!-- CREATE QUIZ MODAL -->
+    <div class="modal" id="quizModal">
+        <div class="modal-content">
+            <button class="modal-close" data-close="quizModal"><i data-lucide="x"></i></button>
+            <h2>Create Gamified RL Quiz</h2>
+            <form id="quizForm" class="modal-form">
+                <label>Quiz Title <input name="title" type="text" placeholder="e.g. Linear Equations Challenge" required></label>
+                <label>Target Class <input name="className" id="quizFormClass" type="text" required></label>
+                <label>Subject <input name="subject" type="text" placeholder="e.g. Mathematics" required></label>
+                <label>Initial Difficulty Level
+                    <select name="difficulty">
+                        <option value="Easy">Beginner (Easy)</option>
+                        <option value="Medium" selected>Intermediate (Medium)</option>
+                        <option value="Hard">Advanced (Hard)</option>
+                    </select>
+                </label>
+                <label>Question Prompt <textarea name="question" rows="2" placeholder="Write question details..." required></textarea></label>
+                <div class="options-grid">
+                    <input name="optA" placeholder="Option A" required>
+                    <input name="optB" placeholder="Option B" required>
+                    <input name="optC" placeholder="Option C" required>
+                    <input name="optD" placeholder="Option D" required>
+                </div>
+                <label>Correct Choice
+                    <select name="correct">
+                        <option value="A">Option A</option>
+                        <option value="B">Option B</option>
+                        <option value="C">Option C</option>
+                        <option value="D">Option D</option>
+                    </select>
+                </label>
+                <button type="submit" class="primary-btn">Save &amp; Enable RL Adaptive Quiz</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PLAY/SIMULATE QUIZ MODAL -->
+    <div class="modal" id="playModal">
+        <div class="modal-content">
+            <button class="modal-close" data-close="playModal"><i data-lucide="x"></i></button>
+            <span class="badge-rl">RL Simulation Mode</span>
+            <h2 id="playQuizTitle">Quiz Title</h2>
+            <label class="play-student-label">Student playing
+                <select id="playStudentSelect"></select>
+            </label>
+            <p id="playQuizQuestion" class="quiz-q-text">Question content goes here...</p>
+            <div id="playQuizOptions" class="play-options-stack"></div>
+            <div id="rlRewardFeedback" class="rl-feedback-box hidden"></div>
+        </div>
+    </div>
+
+    <!-- ADD STUDENT MODAL -->
+    <div class="modal" id="studentModal">
+        <div class="modal-content">
+            <button class="modal-close" data-close="studentModal"><i data-lucide="x"></i></button>
+            <h2>Enroll Student</h2>
+            <form id="studentForm" class="modal-form">
+                <label>Student Full Name <input name="name" type="text" placeholder="e.g. Aarav Sharma" required></label>
+                <label>Roll / ID Number <input name="roll" type="text" placeholder="e.g. 7B-12" required></label>
+                <label>Class Section <input name="className" id="studentFormClass" type="text" required></label>
+                <label>Initial Mastery Score (%) <input name="mastery" type="number" min="0" max="100" value="65" required></label>
+                <button type="submit" class="primary-btn">Add Student Record</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="toast hidden">
+        <i data-lucide="check-circle"></i>
+        <span id="toastMsg">Operation successful!</span>
+    </div>
+
+    <!-- JS Logic -->
+    <script src="app.js"></script>
+</body>
+</html>

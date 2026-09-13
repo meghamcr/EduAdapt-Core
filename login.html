@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduAdapt | Teacher Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-body">
+    <main class="login-shell">
+        <section class="login-intro">
+            <div class="login-brand-mark">EA</div>
+            <p class="login-kicker">EDUADAPT / TEACHER PORTAL</p>
+            <h1>Adaptive Gamification Hub</h1>
+            <p class="login-description">Sign in to manage classes, create learning games, review student progress, and communicate with your school admin.</p>
+            <div class="login-feature-list">
+                <span>Personalized games for every class section</span>
+                <span>Real student mastery and progress analysis</span>
+                <span>Classroom files, calendar, and admin support</span>
+            </div>
+        </section>
+
+        <section class="login-card">
+            <div class="login-card-heading">
+                <span class="eyebrow">TEACHER PORTAL LOGIN</span>
+                <h2>Welcome back</h2>
+                <p>Use your school account to open the dashboard.</p>
+            </div>
+
+            <form id="separateLoginForm" class="login-form">
+                <label>Teacher Name
+                    <input name="teacherName" type="text" placeholder="e.g. Suresh More" required>
+                </label>
+                <label>School ID
+                    <input name="schoolId" type="text" placeholder="School ID from User.schoolId" required>
+                </label>
+                <label>School Email
+                    <input name="email" type="email" list="teacherEmails" placeholder="Select or enter teacher email" required>
+                    <datalist id="teacherEmails"></datalist>
+                </label>
+                <button class="login-submit" type="submit">Login to Main Dashboard <span>→</span></button>
+                <button class="login-create-account" id="previewDashboardBtn" type="button">Open dashboard preview</button>
+                <p class="login-help">Your name, school ID, role, and class are verified from Supabase <strong>User</strong> and <strong>SchoolClass</strong> tables.</p>
+                <p id="supabaseStatus" class="login-help">Checking Supabase connection...</p>
+                <p id="loginError" class="login-error"></p>
+            </form>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = "https://cehjqggcuyqgkwlafkig.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_nKr8PWPeNoez0uNvDu8inA_HHdFDz3I";
+        const hasSupabase = SUPABASE_URL.startsWith("https://") && !SUPABASE_URL.includes("YOUR_SUPABASE") && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY";
+        const loginSupabase = hasSupabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+        const form = document.querySelector("#separateLoginForm");
+        const errorBox = document.querySelector("#loginError");
+        const statusBox = document.querySelector("#supabaseStatus");
+        const previewButton = document.querySelector("#previewDashboardBtn");
+
+        previewButton.addEventListener("click", () => {
+            localStorage.setItem("eduadapt_demo_mode", "true");
+            localStorage.setItem("eduadapt_teacher", JSON.stringify({
+                id: "presentation-teacher",
+                name: "Presentation Teacher",
+                schoolId: "DEMO-SCHOOL",
+                email: "",
+                role: "TEACHER",
+                className: "6th A",
+                subject: "Physics"
+            }));
+            window.location.href = "index.html";
+        });
+
+        async function loadTeacherEmails() {
+            if (!loginSupabase) {
+                statusBox.textContent = "Supabase is not configured.";
+                return;
+            }
+
+            const result = await loginSupabase
+                .from("User")
+                .select("email,role")
+                .eq("role", "TEACHER")
+                .order("email");
+
+            if (result.error) {
+                console.warn("Teacher list could not load:", result.error.message);
+                statusBox.textContent = `Supabase connected, but User table access failed: ${result.error.message}`;
+                return;
+            }
+
+            statusBox.textContent = `Supabase connected · ${(result.data || []).length} teacher records available`;
+
+            document.querySelector("#teacherEmails").innerHTML = (result.data || [])
+                .map(user => `<option value="${String(user.email).replace(/&/g, "&amp;").replace(/\"/g, "&quot;")}"></option>`)
+                .join("");
+        }
+
+        loadTeacherEmails();
+
+        form.addEventListener("submit", async event => {
+            event.preventDefault();
+            const button = form.querySelector("button[type='submit']");
+            button.disabled = true;
+            button.textContent = "Connecting...";
+            errorBox.textContent = "";
+            const data = new FormData(form);
+            const teacherName = data.get("teacherName").trim();
+            const schoolId = data.get("schoolId").trim();
+            const email = data.get("email").trim();
+
+            try {
+                if (!loginSupabase) throw new Error("Supabase is not configured.");
+
+                const profile = await loginSupabase
+                    .from("User")
+                    .select("id,name,email,role,schoolId,classId")
+                    .eq("email", email)
+                    .eq("name", teacherName)
+                    .eq("schoolId", schoolId)
+                    .maybeSingle();
+
+                if (profile.error) throw profile.error;
+                if (!profile.data) throw new Error("No matching teacher was found. Check name, school ID, and email.");
+
+                const teacher = {
+                    id: profile.data.id,
+                    name: profile.data.name,
+                    email: profile.data.email,
+                    schoolId: profile.data.schoolId,
+                    role: profile.data.role,
+                    classId: profile.data.classId
+                };
+
+                if (String(profile.data.role).toUpperCase() !== "TEACHER") {
+                    throw new Error("This account is not a teacher account.");
+                }
+
+                /* Resolve class details from the real SchoolClass row. */
+                if (teacher.classId) {
+                    const profile = await loginSupabase
+                        .from("SchoolClass")
+                        .select("grade,section")
+                        .eq("id", teacher.classId)
+                        .maybeSingle();
+                    if (profile.error) throw profile.error;
+                    teacher.className = profile.data ? `${profile.data.grade} ${profile.data.section}` : "All Classes";
+                }
+
+                localStorage.setItem("eduadapt_teacher", JSON.stringify(teacher));
+                localStorage.setItem("eduadapt_table_session", "true");
+                window.location.href = "index.html";
+            } catch (error) {
+                const message = String(error.message || "");
+                errorBox.textContent = message || "No matching teacher found in Supabase User table.";
+                button.disabled = false;
+                button.innerHTML = "Login to Main Dashboard <span>→</span>";
+            }
+        });
+    </script>
+</body>
+</html>
