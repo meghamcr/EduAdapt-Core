@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Broadcasts</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Institution-Wide Broadcasts</h1>
+
+    <div class="card">
+      <form id="broadcastForm">
+        <label for="message">Message</label>
+        <textarea id="message" rows="3" required placeholder="Type your announcement..."></textarea>
+
+        <label for="target">Send To</label>
+        <select id="target">
+          <option value="ALL">Everyone in the school</option>
+          <option value="STUDENT">All Students</option>
+          <option value="TEACHER">All Teachers</option>
+          <option value="ADMIN">All Admins</option>
+          <option value="CLASS">A specific Class</option>
+        </select>
+
+        <div id="classIdField" style="display:none;">
+          <label for="classId">Class ID</label>
+          <input type="text" id="classId" placeholder="Paste a Class ID">
+        </div>
+
+        <button type="submit">Send Broadcast</button>
+      </form>
+      <div id="message-result"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    document.getElementById('target').addEventListener('change', (e) => {
+      document.getElementById('classIdField').style.display = e.target.value === 'CLASS' ? 'block' : 'none';
+    });
+
+    document.getElementById('broadcastForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = document.getElementById('message').value;
+      const target = document.getElementById('target').value;
+      const classId = document.getElementById('classId').value || undefined;
+      const resultEl = document.getElementById('message-result');
+      resultEl.textContent = '';
+      resultEl.className = '';
+
+      try {
+        const data = await apiRequest('/broadcast', 'POST', { message, target, classId });
+        resultEl.textContent = `${data.message} — reached ${data.recipientCount} recipient(s).`;
+        resultEl.className = 'success';
+        document.getElementById('broadcastForm').reset();
+        document.getElementById('classIdField').style.display = 'none';
+      } catch (err) {
+        resultEl.textContent = err.message;
+        resultEl.className = 'error';
+      }
+    });
+  </script>
+</body>
+</html>
