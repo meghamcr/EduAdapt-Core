@@ -14,6 +14,7 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 const broadcastRoutes = require('./routes/broadcastRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const exportRoutes = require('./routes/exportRoutes');
+const parentDigestRoutes = require('./routes/parentDigestRoutes');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api', analyticsRoutes);
 app.use('/api', broadcastRoutes);
 app.use('/api', auditRoutes);
 app.use('/api', exportRoutes);
+app.use('/api', parentDigestRoutes);
 
 // Health check — confirms the server is running
 app.get('/api/health', (req, res) => {
