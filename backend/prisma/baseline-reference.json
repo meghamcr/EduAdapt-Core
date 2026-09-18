@@ -5,7 +5,7 @@
   "databaseWritesAllowed": false,
   "productionReconciliationApproved": false,
   "schema": {
-    "path": "schema.prisma",
+    "path": "baselines/phase2b1.schema.prisma",
     "sha256": "343bd6a6662d9f1ca4cecdffa6844e7c853b02d3c31bf19854027c7a761717a8"
   },
   "historicalMigrations": [

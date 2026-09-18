@@ -133,3 +133,13 @@ The existing importer still needs a separately approved redesign: approval gatin
 lossless authority/provenance storage, identity checks, safe replacement/versioning,
 concurrency behavior and verification within the transaction. Those are not fixed
 here. Phase 2B.2 schema design and all data backfills remain unapproved.
+
+## Phase 2B.2 reference preservation
+
+The checkpoint schema is now frozen byte-for-byte at
+`prisma/baselines/phase2b1.schema.prisma`. The reference manifest retains its original
+hash and points there while `prisma/schema.prisma` evolves. Historical migration SQL
+and ledger reconciliation requirements are unchanged. The new forward SQL proposal
+is outside the configured migration directory; see
+[curriculum artifact storage](curriculum-artifact-storage.md). Phase 2B.2 authorizes
+repository storage design only, not deployment or importer work.

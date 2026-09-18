@@ -582,7 +582,6 @@ model CurriculumChapter {
 
   book  CurriculumBook   @relation(fields: [bookId], references: [id], onDelete: Cascade)
   nodes CurriculumNode[]
-  artifactImports CurriculumArtifactImport[]
 
   @@unique([bookId, chapterNumber])
   @@index([bookId])
@@ -621,9 +620,6 @@ model GameSpec {
   grade   String?
 
   curriculumNodeId String? @map("curriculum_node_id")
-  // Null for historical games. Future writers must check approval and node membership.
-  curriculumArtifactVersionId String? @map("curriculum_artifact_version_id")
-  curriculumArtifactVersion CurriculumArtifactVersion? @relation(fields: [curriculumArtifactVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   renderingMode String @default("2.5D") @map("rendering_mode")
   difficulty    String @default("EASY")
@@ -638,7 +634,6 @@ model GameSpec {
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   @@index([curriculumNodeId])
-  @@index([curriculumArtifactVersionId])
   @@map("game_spec")
 }
 
@@ -662,94 +657,4 @@ model GamePlaySession {
   updatedAt             DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   @@map("game_play_session")
-}
-
-// Phase 2B.2: proposed storage only; SQL intentionally outside migrations/.
-enum CurriculumReviewStatus {
-  UNREVIEWED
-  IN_REVIEW
-  APPROVED
-  REJECTED
-  SUPERSEDED
-}
-
-// Independent of legacy book title uniqueness. Display titles remain in snapshots.
-model CurriculumArtifactIdentity {
-  id String @id
-  board String
-  grade String
-  subject String
-  bookKey String
-  editionKey String
-  chapterKey String
-  currentVersionId String?
-  createdAt DateTime @default(now())
-  versions CurriculumArtifactVersion[] @relation("ArtifactVersions")
-  currentVersion CurriculumArtifactVersion? @relation("CurrentArtifact", fields: [id, currentVersionId], references: [identityId, id], onDelete: Restrict, onUpdate: Restrict)
-
-  @@unique([id, currentVersionId])
-  @@unique([board, grade, subject, bookKey, editionKey, chapterKey], map: "artifact_identity_scope_key")
-}
-
-model CurriculumArtifactVersion {
-  id String @id
-  identityId String
-  artifactChecksum String @unique
-  sourceFingerprint String?
-  contentFingerprint String
-  configurationFingerprint String?
-  implementationFingerprint String?
-  model String?
-  generatedAt DateTime?
-  generatedBy String?
-  authorityVersion Int?
-  // Immutable, complete parsed JSON, including unknown future fields.
-  snapshot Json
-  // Derived explicit-only projection; null for artifacts lacking authority v2.
-  authoritativeNodes Json?
-  sourceProvenance Json
-  objectives Json
-  reviewStatus CurriculumReviewStatus @default(UNREVIEWED)
-  reviewRevision Int @default(0)
-  createdAt DateTime @default(now())
-  identity CurriculumArtifactIdentity @relation("ArtifactVersions", fields: [identityId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  currentFor CurriculumArtifactIdentity? @relation("CurrentArtifact")
-  reviews CurriculumArtifactReview[]
-  imports CurriculumArtifactImport[]
-  gameSpecs GameSpec[]
-
-  @@unique([identityId, id])
-  @@index([identityId, contentFingerprint])
-  @@index([identityId, sourceFingerprint])
-  @@index([identityId, reviewStatus])
-}
-
-// Append-only review history; revision supports optimistic concurrency.
-model CurriculumArtifactReview {
-  id String @id @default(uuid())
-  versionId String
-  revision Int
-  fromStatus CurriculumReviewStatus
-  toStatus CurriculumReviewStatus
-  reviewerReference String?
-  reviewedAt DateTime @default(now())
-  notes String?
-  version CurriculumArtifactVersion @relation(fields: [versionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  @@unique([versionId, revision])
-}
-
-// Records successful materialization only, in the future import transaction.
-model CurriculumArtifactImport {
-  id String @id @default(uuid())
-  versionId String
-  chapterId String
-  importedAt DateTime @default(now())
-  importedBy String?
-  importerFingerprint String
-  // Artifact node IDs -> existing/materialized node IDs; no historical guessing.
-  nodeMapping Json
-  version CurriculumArtifactVersion @relation(fields: [versionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  chapter CurriculumChapter @relation(fields: [chapterId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  @@unique([versionId, chapterId])
-  @@index([chapterId, importedAt])
 }
