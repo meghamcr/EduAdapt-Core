@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Analytics</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Analytics</h1>
+
+    <div class="card">
+      <h3>Grade-to-Grade Mastery Comparison</h3>
+      <table>
+        <thead><tr><th>Grade</th><th>Student Count</th><th>Average Mastery</th></tr></thead>
+        <tbody id="gradeMasteryBody"><tr><td colspan="3">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>At-Risk Class Identification</h3>
+      <table>
+        <thead><tr><th>Grade</th><th>Section</th><th>Students</th><th>Avg Mastery</th><th>Engaged Ratio</th><th>At Risk?</th><th>Reason</th></tr></thead>
+        <tbody id="atRiskBody"><tr><td colspan="7">Loading...</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Teacher Workload</h3>
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>Courses</th><th>Lessons</th><th>Class Teacher?</th><th>Class Supervised</th></tr></thead>
+        <tbody id="workloadBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    function fmtPercent(val) {
+      return val === null ? '—' : `${val.toFixed(1)}%`;
+    }
+
+    async function loadGradeMastery() {
+      const tbody = document.getElementById('gradeMasteryBody');
+      try {
+        const data = await apiRequest('/analytics/grade-mastery');
+        tbody.innerHTML = data.grades.map(g => `
+          <tr>
+            <td>${g.grade}</td>
+            <td>${g.studentCount}</td>
+            <td>${fmtPercent(g.averageMastery)}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="3">No data.</td></tr>';
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    async function loadAtRisk() {
+      const tbody = document.getElementById('atRiskBody');
+      try {
+        const data = await apiRequest('/analytics/at-risk-classes');
+        tbody.innerHTML = data.classes.map(c => `
+          <tr>
+            <td>${c.grade}</td>
+            <td>${c.section}</td>
+            <td>${c.studentCount}</td>
+            <td>${fmtPercent(c.averageMastery)}</td>
+            <td>${c.engagedStudentRatio === null ? '—' : (c.engagedStudentRatio * 100).toFixed(0) + '%'}</td>
+            <td>${c.atRisk ? '<span class="badge badge-rejected">YES</span>' : '<span class="badge badge-approved">NO</span>'}</td>
+            <td>${c.reason}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="7">No data.</td></tr>';
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    async function loadWorkload() {
+      const tbody = document.getElementById('workloadBody');
+      try {
+        const data = await apiRequest('/analytics/teacher-workload');
+        tbody.innerHTML = data.teachers.map(t => `
+          <tr>
+            <td>${t.name}</td>
+            <td>${t.email}</td>
+            <td>${t.courseCount}</td>
+            <td>${t.lessonCount}</td>
+            <td>${t.isClassTeacher ? 'Yes' : 'No'}</td>
+            <td>${t.classSupervised ? `Grade ${t.classSupervised.grade}-${t.classSupervised.section}` : '—'}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6">No data.</td></tr>';
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    loadGradeMastery();
+    loadAtRisk();
+    loadWorkload();
+  </script>
+</body>
+</html>
