@@ -146,7 +146,8 @@ test('proposed SQL only adds objects, never mutates legacy rows or migration his
   assert.equal(alters.length, 7); alters.forEach(s => assert.match(s, / ADD (COLUMN|CONSTRAINT) /));
   assert.equal((sql.match(/CREATE TABLE /g) || []).length, 4);
   assert.match(sql, /payload is immutable/); assert.match(sql, /history is append-only/);
-  assert.equal(fs.readdirSync(path.join(root, 'prisma/migrations')).length, 2);
+  assert.deepEqual(fs.readdirSync(path.join(root, 'prisma/migrations')).sort(), ['20260820231000_adaptive_learning', '20260820231100_add_level_table', '20260919000100_curriculum_artifact_storage']);
+  assert.equal(fs.readFileSync(path.join(root, 'prisma/migrations/20260919000100_curriculum_artifact_storage/migration.sql'), 'utf8'), sql);
 });
 test('all new Prisma storage fields have matching SQL columns and nullability', () => {
   for (const name of ['CurriculumArtifactIdentity', 'CurriculumArtifactVersion', 'CurriculumArtifactReview', 'CurriculumArtifactImport']) {
