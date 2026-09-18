@@ -25,6 +25,14 @@ async function updateUserRole(req, res) {
       select: { id: true, name: true, email: true, role: true, isActive: true, schoolId: true }
     });
 
+    await prisma.engagementLog.create({
+      data: {
+        userId: req.user.userId,
+        action: 'USER_ROLE_UPDATED',
+        metadata: { targetUserId: id, targetName: updated.name, oldRole: user.role, newRole: role }
+      }
+    });
+
     res.json({ message: 'Role updated', user: updated });
   } catch (err) {
     console.error('Update role error:', err);
@@ -55,6 +63,14 @@ async function setUserActiveStatus(req, res) {
       where: { id },
       data: { isActive },
       select: { id: true, name: true, email: true, role: true, isActive: true, schoolId: true }
+    });
+
+    await prisma.engagementLog.create({
+      data: {
+        userId: req.user.userId,
+        action: isActive ? 'USER_REACTIVATED' : 'USER_ACCESS_REVOKED',
+        metadata: { targetUserId: id, targetName: updated.name }
+      }
     });
 
     res.json({ message: isActive ? 'User reactivated' : 'User access revoked', user: updated });

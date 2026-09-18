@@ -47,6 +47,14 @@ async function updateVerificationStatus(req, res) {
       select: { id: true, name: true, email: true, role: true, verificationStatus: true, schoolId: true, classId: true, createdAt: true }
     });
 
+    await prisma.engagementLog.create({
+      data: {
+        userId: req.user.userId,
+        action: 'TEACHER_VERIFICATION_UPDATED',
+        metadata: { targetUserId: id, targetName: updated.name, newStatus: status }
+      }
+    });
+
     res.json({ message: `Teacher ${status.toLowerCase()}`, teacher: updated });
   } catch (err) {
     console.error('Update verification error:', err);
@@ -78,6 +86,14 @@ async function assignClassTeacher(req, res) {
     const updated = await prisma.schoolClass.update({
       where: { id: classId },
       data: { classTeacherId: id }
+    });
+
+    await prisma.engagementLog.create({
+      data: {
+        userId: req.user.userId,
+        action: 'CLASS_TEACHER_ASSIGNED',
+        metadata: { teacherId: id, teacherName: teacher.name, classId, grade: updated.grade, section: updated.section }
+      }
     });
 
     res.json({ message: 'Class Teacher assigned', class: updated });

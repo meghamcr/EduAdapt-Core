@@ -12,6 +12,7 @@ const studentRoutes = require('./routes/studentRoutes');
 const rbacRoutes = require('./routes/rbacRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const broadcastRoutes = require('./routes/broadcastRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api', studentRoutes);
 app.use('/api', rbacRoutes);
 app.use('/api', analyticsRoutes);
 app.use('/api', broadcastRoutes);
+app.use('/api', auditRoutes);
 
 // Health check — confirms the server is running
 app.get('/api/health', (req, res) => {
