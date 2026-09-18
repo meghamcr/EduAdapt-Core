@@ -1,14 +1,42 @@
+const { validateSourceFidelity } = require("./sourceFidelity");
 function validateCurriculum(curriculum) {
   const errors = [];
   const warnings = [];
+  const stats = { totalNodes: 0, rootNodes: 0, maximumDepth: 0, learningObjectives: 0, nodeTypes: {}, explicitExampleOrActivityNodes: 0 };
+  const invalid = () => ({ valid: false, errors, warnings, stats });
 
-  if (!curriculum || typeof curriculum !== "object") {
+  if (!curriculum || typeof curriculum !== "object" || Array.isArray(curriculum)) {
     return {
       valid: false,
       errors: ["Curriculum must be an object."],
-      warnings: []
+      warnings: [], stats
     };
   }
+
+  const fidelity = validateSourceFidelity(curriculum);
+  errors.push(...fidelity.errors);
+  warnings.push(...fidelity.warnings);
+
+  // Validate types before traversing untrusted model/file data. Do not coerce
+  // objects into strings: that could disguise corrupted educational content.
+  for (const field of ["board", "subject", "book_id", "book", "chapter_id", "chapter"]) {
+    if (typeof curriculum[field] !== "string") errors.push(`${field} must be a string.`);
+  }
+  if (Array.isArray(curriculum.nodes)) {
+    stats.totalNodes = curriculum.nodes.length;
+    curriculum.nodes.forEach((node, index) => {
+      if (!node || typeof node !== "object" || Array.isArray(node)) {
+        errors.push(`Node ${index + 1} must be an object.`);
+        return;
+      }
+      for (const field of ["id", "title", "type", "content"]) {
+        if (typeof node[field] !== "string") errors.push(`Node ${index + 1}: ${field} must be a string.`);
+      }
+      if (node.description !== undefined && typeof node.description !== "string") errors.push(`Node ${index + 1}: description must be a string.`);
+      if (node.parent_id !== undefined && typeof node.parent_id !== "string") errors.push(`Node ${index + 1}: parent_id must be a string.`);
+    });
+  }
+  if (errors.length) return invalid();
 
   // ==================================================
   // 1. CURRICULUM IDENTITY
@@ -18,12 +46,10 @@ function validateCurriculum(curriculum) {
     errors.push("Curriculum board is required.");
   }
 
-  const grade = Number(curriculum.grade);
-
-  if (!Number.isInteger(grade) || grade < 1 || grade > 12) {
-    errors.push(
-      "Curriculum grade must be between 1 and 12."
-    );
+  const grade = curriculum.grade;
+  if (!((typeof grade === "string" && grade.trim()) ||
+        (typeof grade === "number" && Number.isSafeInteger(grade)))) {
+    errors.push("Curriculum grade must be a non-empty label or safe integer.");
   }
 
   if (!curriculum.subject?.trim()) {
@@ -43,8 +69,8 @@ function validateCurriculum(curriculum) {
   }
 
   if (
-    !Number.isInteger(Number(curriculum.chapter_number)) ||
-    Number(curriculum.chapter_number) < 1
+    !Number.isSafeInteger(curriculum.chapter_number) ||
+    curriculum.chapter_number < 1
   ) {
     errors.push(
       "Curriculum chapter_number must be a positive integer."
@@ -73,6 +99,9 @@ function validateCurriculum(curriculum) {
           objective.trim().length > 0
       );
 
+    if (validObjectives.length !== curriculum.learning_objectives.length) {
+      errors.push("Every learning objective must be a non-empty string.");
+    }
     if (validObjectives.length === 0) {
       warnings.push(
         "No usable learning objectives were generated."
@@ -92,7 +121,7 @@ function validateCurriculum(curriculum) {
     return {
       valid: false,
       errors,
-      warnings
+      warnings, stats
     };
   }
 
@@ -104,7 +133,7 @@ function validateCurriculum(curriculum) {
     return {
       valid: false,
       errors,
-      warnings
+      warnings, stats
     };
   }
 
@@ -190,11 +219,11 @@ function validateCurriculum(curriculum) {
     }
 
     if (
-      !Number.isFinite(Number(node.order)) ||
-      Number(node.order) < 1
+      !Number.isSafeInteger(node.order) ||
+      node.order < 1
     ) {
       errors.push(
-        `${location} (${node.id || "unknown"}) must have a positive order value.`
+        `${location} (${node.id || "unknown"}) must have a positive integer order value.`
       );
     }
 
@@ -340,22 +369,14 @@ function validateCurriculum(curriculum) {
         .push(node);
     });
 
-    function visit(nodeId) {
-      if (reachable.has(nodeId)) {
-        return;
-      }
-
+    // Iterative traversal supports deep hierarchies without a JS call-stack limit.
+    const pending = [rootId];
+    while (pending.length) {
+      const nodeId = pending.pop();
+      if (reachable.has(nodeId)) continue;
       reachable.add(nodeId);
-
-      const children =
-        childrenByParent.get(nodeId) || [];
-
-      children.forEach(child => {
-        visit(child.id);
-      });
+      for (const child of childrenByParent.get(nodeId) || []) pending.push(child.id);
     }
-
-    visit(rootId);
 
     curriculum.nodes.forEach(node => {
       if (
@@ -558,7 +579,7 @@ function validateCurriculum(curriculum) {
   // 13. EDUCATIONAL STRUCTURE STATISTICS
   // ==================================================
 
-  const typeCounts = {};
+  const typeCounts = Object.create(null);
 
   curriculum.nodes.forEach(node => {
     if (!node?.type) {

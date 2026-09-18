@@ -1,0 +1,59 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 480 >>
+stream
+BT /F1 12 Tf 50 760 Td 20 TL
+(Synthetic Curriculum Fixture) Tj
+T* (Grouping counters) Tj
+T* (Place twelve counters into three equal groups.) Tj
+T* (Each group contains four counters: 12 / 3 = 4.) Tj
+T* (Worked example: 3 + 3 + 3 + 3 = 12.) Tj
+T* (Activity: rearrange the counters and compare groups.) Tj
+T* (Observation: changing the arrangement preserves the total.) Tj
+T* (Table: Groups     Counters per group     Total) Tj
+T* (       3          4                      12) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents 6 0 R >>
+endobj
+6 0 obj
+<< /Length 273 >>
+stream
+BT /F1 12 Tf 50 760 Td 20 TL
+(Synthetic Curriculum Fixture - page two) Tj
+T* (Measure and compare) Tj
+T* (Use the same unit when comparing lengths.) Tj
+T* (Worked example: 2 units + 3 units = 5 units.) Tj
+T* (Activity: line up two strips and observe their endpoints.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000247 00000 n 
+0000000778 00000 n 
+0000000904 00000 n 
+0000001228 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+1298
+%%EOF

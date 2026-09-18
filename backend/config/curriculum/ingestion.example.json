@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "outputDirectory": "../../ingestion-output/example",
+  "model": "REPLACE_WITH_AVAILABLE_GEMINI_MODEL",
+  "timeoutMs": 90000,
+  "maxOutputTokens": 16384,
+  "retry": {
+    "maxAttempts": 4,
+    "baseDelayMs": 1000,
+    "maxDelayMs": 30000,
+    "retryNetwork": true,
+    "retryHttpStatuses": [],
+    "stopOnHttpError": true
+  },
+  "extraction": {
+    "minCharacters": 100,
+    "allowLowText": false
+  },
+  "chapterDelayMs": 1000,
+  "books": [
+    {
+      "board": "Example Board",
+      "grade": "Foundation",
+      "subject": "Quantities",
+      "bookId": "synthetic-fixture-book",
+      "book": "Synthetic Test Material — Not Approved Curriculum",
+      "edition": "fixture-v1",
+      "chapters": [
+        {
+          "chapterId": "synthetic-grouping",
+          "chapterNumber": 1,
+          "chapterTitle": "Grouping counters",
+          "pdfPath": "../../tests/curriculumIngestion/fixtures/source-chapter.pdf",
+          "pages": [
+            1
+          ],
+          "outputFile": "grouping.json"
+        },
+        {
+          "chapterId": "synthetic-measurement",
+          "chapterNumber": 2,
+          "chapterTitle": "Measure and compare",
+          "sources": [
+            {
+              "pdfPath": "../../tests/curriculumIngestion/fixtures/source-chapter.pdf",
+              "pages": [
+                2
+              ]
+            }
+          ],
+          "outputFile": "measurement.json"
+        }
+      ]
+    }
+  ],
+  "sourceMode": "pdf"
+}

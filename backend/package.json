@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/curriculumIngestion/*.test.js",
+    "test:curriculum": "node --test tests/curriculumIngestion/*.test.js",
+    "ingest:curriculum": "node src/services/curriculumIngestion/ingestCurriculum.js"
   },
   "keywords": [],
   "author": "",
@@ -13,9 +15,14 @@
     "@prisma/client": "^7.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "pdf-lib": "1.17.1",
+    "pdf-parse": "2.4.5"
   },
   "devDependencies": {
     "prisma": "^7.10.0"
+  },
+  "engines": {
+    "node": ">=22.16.0 <23 || >=24.0.0"
   }
 }

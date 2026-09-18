@@ -21,3 +21,7 @@ npm-debug.log*
 .claude/
 .windsurf/
 skills-lock.json
+
+# Local ingestion inputs/outputs; synthetic test fixtures remain tracked.
+/curriculum-local/
+/ingestion-output/
