@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Teachers</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Teacher Verification Queue</h1>
+    <div id="pageMessage"></div>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Class Teacher Of</th>
+            <th>Courses</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="teachersTableBody">
+          <tr><td colspan="6">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    function statusBadge(status) {
+      const cls = status === 'APPROVED' ? 'badge-approved' : status === 'REJECTED' ? 'badge-rejected' : 'badge-pending';
+      return `<span class="badge ${cls}">${status}</span>`;
+    }
+
+    async function loadTeachers() {
+      const tbody = document.getElementById('teachersTableBody');
+      try {
+        const data = await apiRequest('/teachers');
+        if (data.teachers.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6">No teachers found.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.teachers.map(t => `
+          <tr>
+            <td>${t.name}</td>
+            <td>${t.email}</td>
+            <td>${statusBadge(t.verificationStatus)}</td>
+            <td>${t.classTeacherOf ? `Grade ${t.classTeacherOf.grade}-${t.classTeacherOf.section}` : '—'}</td>
+            <td>${t.courses.length > 0 ? t.courses.map(c => c.title).join(', ') : '—'}</td>
+            <td>
+              <button onclick="setStatus('${t.id}', 'APPROVED')">Approve</button>
+              <button onclick="setStatus('${t.id}', 'REJECTED')">Reject</button>
+              <button onclick="promptAssignClass('${t.id}', '${t.name}')">Assign Class Teacher</button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    async function setStatus(teacherId, status) {
+      const msgEl = document.getElementById('pageMessage');
+      msgEl.textContent = '';
+      msgEl.className = '';
+      try {
+        await apiRequest(`/teachers/${teacherId}/verification`, 'PATCH', { status });
+        msgEl.textContent = `Teacher ${status.toLowerCase()}.`;
+        msgEl.className = 'success';
+        loadTeachers();
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    }
+
+    async function promptAssignClass(teacherId, teacherName) {
+      const classId = prompt(`Enter the Class ID to assign ${teacherName} as Class Teacher:`);
+      if (!classId) return;
+
+      const msgEl = document.getElementById('pageMessage');
+      msgEl.textContent = '';
+      msgEl.className = '';
+      try {
+        await apiRequest(`/teachers/${teacherId}/assign-class`, 'PATCH', { classId });
+        msgEl.textContent = 'Class Teacher assigned successfully.';
+        msgEl.className = 'success';
+        loadTeachers();
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    }
+
+    loadTeachers();
+  </script>
+</body>
+</html>
