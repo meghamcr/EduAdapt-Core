@@ -19,6 +19,10 @@ async function adminLogin(req, res) {
     if (user.role !== 'ADMIN') {
       return res.status(403).json({ error: 'Not authorized as admin' });
     }
+    
+    if (!user.isActive) {
+      return res.status(403).json({ error: 'This account has been deactivated' });
+    }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 

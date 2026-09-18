@@ -118,6 +118,7 @@ model User {
   passwordHash String
   role         Role     @default(STUDENT)
   verificationStatus VerificationStatus @default(PENDING)
+  isActive           Boolean            @default(true)
   schoolId     String
   classId      String?
   createdAt    DateTime @default(now())
