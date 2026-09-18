@@ -5,6 +5,8 @@ const authRoutes = require('./routes/authRoutes');
 const schoolRoutes = require('./routes/schoolRoutes');
 const { requireAdmin } = require('./middleware/authMiddleware');
 const classRoutes = require('./routes/classRoutes');
+const courseRoutes = require('./routes/courseRoutes');
+const subjectRoutes = require('./routes/subjectRoutes');
 
 const app = express();
 
@@ -13,6 +15,8 @@ app.use(express.json());
 app.use('/api', authRoutes);
 app.use('/api', schoolRoutes);
 app.use('/api', classRoutes);
+app.use('/api', courseRoutes);
+app.use('/api', subjectRoutes);
 
 // Health check — confirms the server is running
 app.get('/api/health', (req, res) => {
