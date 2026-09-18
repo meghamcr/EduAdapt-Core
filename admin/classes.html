@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Classes</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Classes</h1>
+
+    <div class="card">
+      <h3>Create Class</h3>
+      <form id="createClassForm">
+        <label for="grade">Grade</label>
+        <input type="text" id="grade" required placeholder="e.g. 8">
+
+        <label for="section">Section</label>
+        <input type="text" id="section" required placeholder="e.g. A">
+
+        <button type="submit">Create Class</button>
+      </form>
+      <div id="createMessage"></div>
+    </div>
+
+    <div class="card">
+      <h3>All Classes</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Grade</th>
+            <th>Section</th>
+            <th>Class ID</th>
+            <th>Class Teacher ID</th>
+          </tr>
+        </thead>
+        <tbody id="classesTableBody">
+          <tr><td colspan="4">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    async function loadClasses() {
+      const tbody = document.getElementById('classesTableBody');
+      try {
+        const data = await apiRequest('/classes');
+        if (data.classes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4">No classes yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.classes.map(c => `
+          <tr>
+            <td>${c.grade}</td>
+            <td>${c.section}</td>
+            <td>${c.id}</td>
+            <td>${c.classTeacherId || '—'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('createClassForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const grade = document.getElementById('grade').value;
+      const section = document.getElementById('section').value;
+      const messageEl = document.getElementById('createMessage');
+      messageEl.textContent = '';
+      messageEl.className = '';
+
+      try {
+        await apiRequest('/classes', 'POST', { grade, section });
+        messageEl.textContent = 'Class created successfully.';
+        messageEl.className = 'success';
+        document.getElementById('createClassForm').reset();
+        loadClasses();
+      } catch (err) {
+        messageEl.textContent = err.message;
+        messageEl.className = 'error';
+      }
+    });
+
+    loadClasses();
+  </script>
+</body>
+</html>
