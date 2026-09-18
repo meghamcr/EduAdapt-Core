@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Dashboard</h1>
+    <div class="card">
+      <h3>Platform Adoption (Today / Last 30 Days)</h3>
+      <div id="metrics">Loading...</div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    async function loadMetrics() {
+      const el = document.getElementById('metrics');
+      try {
+        const data = await apiRequest('/analytics/adoption');
+        el.innerHTML = `
+          <p><strong>DAU:</strong> ${data.dau}</p>
+          <p><strong>MAU:</strong> ${data.mau}</p>
+          <p><strong>Login events today:</strong> ${data.totalLoginEventsToday}</p>
+          <p><strong>Login events (30 days):</strong> ${data.totalLoginEventsLast30Days}</p>
+        `;
+      } catch (err) {
+        el.innerHTML = `<span class="error">${err.message}</span>`;
+      }
+    }
+
+    loadMetrics();
+  </script>
+</body>
+</html>
