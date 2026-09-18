@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Users & Roles</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Users & Roles</h1>
+    <p>Look up a user by their ID (find IDs on the Teachers or Students pages) to change their role or access status.</p>
+
+    <div class="card">
+      <label for="userIdInput">User ID</label>
+      <input type="text" id="userIdInput" placeholder="Paste a user's ID">
+      <button id="lookupBtn">Look Up</button>
+    </div>
+
+    <div class="card" id="userCard" style="display:none;">
+      <h3 id="userName"></h3>
+      <p id="userEmail"></p>
+      <p>Current role: <span id="userRole" class="badge"></span></p>
+      <p>Access status: <span id="userActive" class="badge"></span></p>
+
+      <label for="roleSelect">Change Role</label>
+      <select id="roleSelect">
+        <option value="STUDENT">STUDENT</option>
+        <option value="TEACHER">TEACHER</option>
+        <option value="ADMIN">ADMIN</option>
+      </select>
+      <button id="updateRoleBtn">Update Role</button>
+
+      <div style="margin-top:16px;">
+        <button id="revokeBtn">Revoke Access</button>
+        <button id="reactivateBtn">Reactivate Access</button>
+      </div>
+
+      <div id="actionMessage"></div>
+    </div>
+
+    <div id="lookupMessage"></div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+    let currentUserId = null;
+
+    document.getElementById('lookupBtn').addEventListener('click', async () => {
+      const id = document.getElementById('userIdInput').value.trim();
+      const lookupMsg = document.getElementById('lookupMessage');
+      lookupMsg.textContent = '';
+      lookupMsg.className = '';
+
+      if (!id) {
+        lookupMsg.textContent = 'Please enter a user ID.';
+        lookupMsg.className = 'error';
+        return;
+      }
+
+      // There is no direct GET /users/:id endpoint, so we try the teachers list
+      // and students list to find matching info for display purposes.
+      try {
+        const [teachersData, studentsData] = await Promise.all([
+          apiRequest('/teachers'),
+          apiRequest('/students')
+        ]);
+        const found = teachersData.teachers.find(t => t.id === id) || studentsData.students.find(s => s.id === id);
+
+        currentUserId = id;
+        document.getElementById('userCard').style.display = 'block';
+
+        if (found) {
+          document.getElementById('userName').textContent = found.name;
+          document.getElementById('userEmail').textContent = found.email;
+          document.getElementById('userRole').textContent = found.verificationStatus !== undefined ? 'TEACHER' : 'STUDENT';
+        } else {
+          document.getElementById('userName').textContent = '(User not in Teachers/Students list — could be an Admin)';
+          document.getElementById('userEmail').textContent = '';
+          document.getElementById('userRole').textContent = 'Unknown';
+        }
+        document.getElementById('userActive').textContent = 'Unknown until an action is taken';
+      } catch (err) {
+        lookupMsg.textContent = err.message;
+        lookupMsg.className = 'error';
+      }
+    });
+
+    document.getElementById('updateRoleBtn').addEventListener('click', async () => {
+      const role = document.getElementById('roleSelect').value;
+      const msgEl = document.getElementById('actionMessage');
+      msgEl.textContent = '';
+      msgEl.className = '';
+      try {
+        const data = await apiRequest(`/users/${currentUserId}/role`, 'PATCH', { role });
+        msgEl.textContent = `Role updated to ${data.user.role}.`;
+        msgEl.className = 'success';
+        document.getElementById('userRole').textContent = data.user.role;
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    });
+
+    document.getElementById('revokeBtn').addEventListener('click', () => setActive(false));
+    document.getElementById('reactivateBtn').addEventListener('click', () => setActive(true));
+
+    async function setActive(isActive) {
+      const msgEl = document.getElementById('actionMessage');
+      msgEl.textContent = '';
+      msgEl.className = '';
+      try {
+        const data = await apiRequest(`/users/${currentUserId}/active-status`, 'PATCH', { isActive });
+        msgEl.textContent = data.message;
+        msgEl.className = 'success';
+        document.getElementById('userActive').textContent = data.user.isActive ? 'ACTIVE' : 'REVOKED';
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    }
+  </script>
+</body>
+</html>
