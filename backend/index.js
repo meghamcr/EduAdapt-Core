@@ -13,6 +13,7 @@ const rbacRoutes = require('./routes/rbacRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const broadcastRoutes = require('./routes/broadcastRoutes');
 const auditRoutes = require('./routes/auditRoutes');
+const exportRoutes = require('./routes/exportRoutes');
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use('/api', rbacRoutes);
 app.use('/api', analyticsRoutes);
 app.use('/api', broadcastRoutes);
 app.use('/api', auditRoutes);
+app.use('/api', exportRoutes);
 
 // Health check — confirms the server is running
 app.get('/api/health', (req, res) => {
