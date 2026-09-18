@@ -35,6 +35,13 @@ async function adminLogin(req, res) {
       process.env.JWT_SECRET,
       { expiresIn: '8h' }
     );
+    await prisma.engagementLog.create({
+      data: {
+        userId: user.id,
+        action: 'LOGIN',
+        metadata: { role: user.role }
+      }
+    });
 
     res.json({
       token,
