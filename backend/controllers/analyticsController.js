@@ -91,5 +91,86 @@ async function getGradeMasteryComparison(req, res) {
     res.status(500).json({ error: 'Something went wrong' });
   }
 }
+async function getAtRiskClasses(req, res) {
+  try {
+    const MASTERY_THRESHOLD = 40;
+    const ENGAGEMENT_RATIO_THRESHOLD = 0.5;
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-module.exports = { getAdoptionMetrics, getGradeMasteryComparison };
+    const classes = await prisma.schoolClass.findMany({
+      where: { schoolId: req.user.schoolId },
+      select: { id: true, grade: true, section: true }
+    });
+
+    const results = [];
+
+    for (const cls of classes) {
+      const students = await prisma.user.findMany({
+        where: { classId: cls.id, role: 'STUDENT' },
+        select: { id: true }
+      });
+      const studentIds = students.map(s => s.id);
+
+      if (studentIds.length === 0) {
+        results.push({
+          classId: cls.id,
+          grade: cls.grade,
+          section: cls.section,
+          studentCount: 0,
+          averageMastery: null,
+          engagedStudentRatio: null,
+          atRisk: false,
+          reason: 'No students enrolled'
+        });
+        continue;
+      }
+
+      const masteries = await prisma.studentTopicMastery.findMany({
+        where: { studentId: { in: studentIds } },
+        select: { masteryScore: true }
+      });
+
+      const averageMastery = masteries.length === 0
+        ? null
+        : masteries.reduce((sum, m) => sum + m.masteryScore, 0) / masteries.length;
+
+      const engagedLogs = await prisma.engagementLog.findMany({
+        where: { userId: { in: studentIds }, createdAt: { gte: thirtyDaysAgo } },
+        select: { userId: true }
+      });
+      const engagedStudentCount = new Set(engagedLogs.map(l => l.userId)).size;
+      const engagedStudentRatio = engagedStudentCount / studentIds.length;
+
+      let atRisk = false;
+      let reason = 'Within normal range';
+
+      if (averageMastery === null && engagedLogs.length === 0) {
+        reason = 'Insufficient data';
+      } else if (averageMastery !== null && averageMastery < MASTERY_THRESHOLD) {
+        atRisk = true;
+        reason = 'Low average mastery score';
+      } else if (engagedStudentRatio < ENGAGEMENT_RATIO_THRESHOLD) {
+        atRisk = true;
+        reason = 'Low student engagement';
+      }
+
+      results.push({
+        classId: cls.id,
+        grade: cls.grade,
+        section: cls.section,
+        studentCount: studentIds.length,
+        averageMastery,
+        engagedStudentRatio,
+        atRisk,
+        reason
+      });
+    }
+
+    res.json({ classes: results });
+  } catch (err) {
+    console.error('Get at-risk classes error:', err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+}
+
+module.exports = { getAdoptionMetrics, getGradeMasteryComparison, getAtRiskClasses };
