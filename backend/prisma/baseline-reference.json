@@ -1,0 +1,37 @@
+{
+  "kind": "NON_DEPLOYABLE_BASELINE_REFERENCE",
+  "version": 1,
+  "checkpoint": "ae63187",
+  "databaseWritesAllowed": false,
+  "productionReconciliationApproved": false,
+  "schema": {
+    "path": "schema.prisma",
+    "sha256": "343bd6a6662d9f1ca4cecdffa6844e7c853b02d3c31bf19854027c7a761717a8"
+  },
+  "historicalMigrations": [
+    {
+      "name": "20260820231000_adaptive_learning",
+      "path": "migrations/20260820231000_adaptive_learning/migration.sql",
+      "sha256": "64874ed118ee48ecf0bc40958dcc47d9e4002a4e775d5122ecc85d08c57d7a4f"
+    },
+    {
+      "name": "20260820231100_add_level_table",
+      "path": "migrations/20260820231100_add_level_table/migration.sql",
+      "sha256": "b0b000c1834465def1afa81bdfc84408ad2bd4a93aaa482b9edd7addb4322e07"
+    }
+  ],
+  "phase2aObservation": {
+    "postgresVersion": "17.6",
+    "applicationTables": 33,
+    "curriculumBooks": 2,
+    "curriculumChapters": 22,
+    "curriculumNodes": 612,
+    "completedAdaptiveMigrationChecksum": "620a04407e33e2a38f7e8daa216ef988ad1e81fc2cdbae2e80b2352a6519e470"
+  },
+  "limitations": [
+    "Not executable SQL or a Prisma migration; never place in migrations/.",
+    "Historical SQL is incomplete and differs from the completed adaptive ledger checksum.",
+    "Schema does not capture all live triggers, grants or RLS policies.",
+    "Counts are historical observations, not assertions about future production data."
+  ]
+}

@@ -4,14 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/curriculumIngestion/*.test.js",
+    "test": "node --test tests/curriculumIngestion/*.test.js tests/prisma/*.test.js",
     "test:curriculum": "node --test tests/curriculumIngestion/*.test.js",
-    "ingest:curriculum": "node src/services/curriculumIngestion/ingestCurriculum.js"
+    "ingest:curriculum": "node src/services/curriculumIngestion/ingestCurriculum.js",
+    "test:prisma": "node --test tests/prisma/*.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "^7.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
