@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Courses & Subjects</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Courses & Subjects</h1>
+
+    <div class="card">
+      <h3>Create Course</h3>
+      <form id="createCourseForm">
+        <label for="title">Title</label>
+        <input type="text" id="title" required placeholder="e.g. Mathematics">
+
+        <label for="teacherId">Teacher ID</label>
+        <input type="text" id="teacherId" required placeholder="Paste a teacher's user ID">
+
+        <button type="submit">Create Course</button>
+      </form>
+      <div id="createCourseMessage"></div>
+    </div>
+
+    <div class="card">
+      <h3>All Courses</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Teacher</th>
+            <th>Course ID</th>
+            <th>View Subjects</th>
+          </tr>
+        </thead>
+        <tbody id="coursesTableBody">
+          <tr><td colspan="4">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" id="subjectsSection" style="display:none;">
+      <h3>Subjects for <span id="selectedCourseTitle"></span></h3>
+
+      <form id="createSubjectForm">
+        <label for="subjectName">Name</label>
+        <input type="text" id="subjectName" required placeholder="e.g. Algebra">
+
+        <label for="subjectCode">Code</label>
+        <input type="text" id="subjectCode" required placeholder="e.g. ALG101">
+
+        <label for="subjectDescription">Description</label>
+        <input type="text" id="subjectDescription" placeholder="Optional">
+
+        <label for="subjectOrderIndex">Order Index</label>
+        <input type="number" id="subjectOrderIndex" required placeholder="e.g. 1">
+
+        <button type="submit">Create Subject</button>
+      </form>
+      <div id="createSubjectMessage"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Name</th>
+            <th>Code</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody id="subjectsTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+    let selectedCourseId = null;
+
+    async function loadCourses() {
+      const tbody = document.getElementById('coursesTableBody');
+      try {
+        const data = await apiRequest('/courses');
+        if (data.courses.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4">No courses yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.courses.map(c => `
+          <tr>
+            <td>${c.title}</td>
+            <td>${c.teacher.name} (${c.teacher.email})</td>
+            <td>${c.id}</td>
+            <td><button onclick="viewSubjects('${c.id}', '${c.title}')">View Subjects</button></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('createCourseForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const teacherId = document.getElementById('teacherId').value;
+      const messageEl = document.getElementById('createCourseMessage');
+      messageEl.textContent = '';
+      messageEl.className = '';
+
+      try {
+        await apiRequest('/courses', 'POST', { title, teacherId });
+        messageEl.textContent = 'Course created successfully.';
+        messageEl.className = 'success';
+        document.getElementById('createCourseForm').reset();
+        loadCourses();
+      } catch (err) {
+        messageEl.textContent = err.message;
+        messageEl.className = 'error';
+      }
+    });
+
+    async function viewSubjects(courseId, courseTitle) {
+      selectedCourseId = courseId;
+      document.getElementById('subjectsSection').style.display = 'block';
+      document.getElementById('selectedCourseTitle').textContent = courseTitle;
+      await loadSubjects();
+    }
+
+    async function loadSubjects() {
+      const tbody = document.getElementById('subjectsTableBody');
+      try {
+        const data = await apiRequest(`/courses/${selectedCourseId}/subjects`);
+        if (data.subjects.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4">No subjects yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.subjects.map(s => `
+          <tr>
+            <td>${s.orderIndex}</td>
+            <td>${s.name}</td>
+            <td>${s.code}</td>
+            <td>${s.description || '—'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('createSubjectForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('subjectName').value;
+      const code = document.getElementById('subjectCode').value;
+      const description = document.getElementById('subjectDescription').value || undefined;
+      const orderIndex = parseInt(document.getElementById('subjectOrderIndex').value, 10);
+      const messageEl = document.getElementById('createSubjectMessage');
+      messageEl.textContent = '';
+      messageEl.className = '';
+
+      try {
+        await apiRequest('/subjects', 'POST', { courseId: selectedCourseId, name, code, description, orderIndex });
+        messageEl.textContent = 'Subject created successfully.';
+        messageEl.className = 'success';
+        document.getElementById('createSubjectForm').reset();
+        loadSubjects();
+      } catch (err) {
+        messageEl.textContent = err.message;
+        messageEl.className = 'error';
+      }
+    });
+
+    loadCourses();
+  </script>
+</body>
+</html>
