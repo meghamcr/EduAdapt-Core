@@ -12,6 +12,11 @@ enum Role {
   ADMIN
 }
 
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
 enum RecommendationType {
   NEXT_LESSON
   DIFFICULTY_ADJUSTMENT
@@ -112,6 +117,7 @@ model User {
   email        String   @unique
   passwordHash String
   role         Role     @default(STUDENT)
+  verificationStatus VerificationStatus @default(PENDING)
   schoolId     String
   classId      String?
   createdAt    DateTime @default(now())
