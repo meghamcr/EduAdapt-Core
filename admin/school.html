@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - School</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>School</h1>
+    <div class="card">
+      <h3>School Info</h3>
+      <div id="schoolInfo">Loading...</div>
+      <button id="regenerateBtn">Regenerate Code</button>
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    async function loadSchool() {
+      const el = document.getElementById('schoolInfo');
+      try {
+        const data = await apiRequest('/school');
+        el.innerHTML = `
+          <p><strong>Name:</strong> ${data.school.name}</p>
+          <p><strong>Code:</strong> ${data.school.code}</p>
+          <p><strong>School ID:</strong> ${data.school.id}</p>
+          <p><strong>Created:</strong> ${new Date(data.school.createdAt).toLocaleString()}</p>
+        `;
+      } catch (err) {
+        el.innerHTML = `<span class="error">${err.message}</span>`;
+      }
+    }
+
+    document.getElementById('regenerateBtn').addEventListener('click', async () => {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = '';
+      messageEl.className = '';
+      try {
+        const data = await apiRequest('/school/regenerate-code', 'POST');
+        messageEl.textContent = `Code regenerated: ${data.school.code}`;
+        messageEl.className = 'success';
+        loadSchool();
+      } catch (err) {
+        messageEl.textContent = err.message;
+        messageEl.className = 'error';
+      }
+    });
+
+    loadSchool();
+  </script>
+</body>
+</html>
