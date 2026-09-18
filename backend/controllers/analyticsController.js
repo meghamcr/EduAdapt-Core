@@ -172,5 +172,48 @@ async function getAtRiskClasses(req, res) {
     res.status(500).json({ error: 'Something went wrong' });
   }
 }
+async function getTeacherWorkload(req, res) {
+  try {
+    const teachers = await prisma.user.findMany({
+      where: { schoolId: req.user.schoolId, role: 'TEACHER' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        classTeacherOf: { select: { id: true, grade: true, section: true } },
+        courses: {
+          select: {
+            id: true,
+            title: true,
+            lessons: { select: { id: true } }
+          }
+        }
+      }
+    });
 
-module.exports = { getAdoptionMetrics, getGradeMasteryComparison, getAtRiskClasses };
+    const results = teachers.map(t => {
+      const courseCount = t.courses.length;
+      const lessonCount = t.courses.reduce((sum, c) => sum + c.lessons.length, 0);
+      const isClassTeacher = t.classTeacherOf !== null;
+
+      return {
+        teacherId: t.id,
+        name: t.name,
+        email: t.email,
+        courseCount,
+        lessonCount,
+        isClassTeacher,
+        classSupervised: t.classTeacherOf
+          ? { grade: t.classTeacherOf.grade, section: t.classTeacherOf.section }
+          : null
+      };
+    });
+
+    res.json({ teachers: results });
+  } catch (err) {
+    console.error('Get teacher workload error:', err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+}
+
+module.exports = { getAdoptionMetrics, getGradeMasteryComparison, getAtRiskClasses, getTeacherWorkload };
