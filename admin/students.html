@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Students</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Student Enrollment Registry</h1>
+
+    <div class="card">
+      <label for="classIdFilter">Filter by Class ID</label>
+      <input type="text" id="classIdFilter" placeholder="Paste a Class ID, or leave blank for all">
+
+      <label for="searchFilter">Search by name/email</label>
+      <input type="text" id="searchFilter" placeholder="e.g. Aditya">
+
+      <button id="applyFiltersBtn">Apply Filters</button>
+      <button id="clearFiltersBtn">Clear</button>
+    </div>
+
+    <div class="card">
+      <h3>Students (<span id="studentCount">0</span>)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Grade</th>
+            <th>Section</th>
+            <th>Class ID</th>
+          </tr>
+        </thead>
+        <tbody id="studentsTableBody">
+          <tr><td colspan="5">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    async function loadStudents() {
+      const tbody = document.getElementById('studentsTableBody');
+      const classId = document.getElementById('classIdFilter').value.trim();
+      const search = document.getElementById('searchFilter').value.trim();
+
+      const params = new URLSearchParams();
+      if (classId) params.set('classId', classId);
+      if (search) params.set('search', search);
+      const query = params.toString() ? `?${params.toString()}` : '';
+
+      try {
+        const data = await apiRequest(`/students${query}`);
+        document.getElementById('studentCount').textContent = data.count;
+        if (data.students.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5">No students found.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.students.map(s => `
+          <tr>
+            <td>${s.name}</td>
+            <td>${s.email}</td>
+            <td>${s.studentClass ? s.studentClass.grade : '—'}</td>
+            <td>${s.studentClass ? s.studentClass.section : '—'}</td>
+            <td>${s.classId || '—'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('applyFiltersBtn').addEventListener('click', loadStudents);
+    document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+      document.getElementById('classIdFilter').value = '';
+      document.getElementById('searchFilter').value = '';
+      loadStudents();
+    });
+
+    loadStudents();
+  </script>
+</body>
+</html>
