@@ -110,6 +110,10 @@
                     <i data-lucide="layout-dashboard"></i>
                     <span>DASHBOARD</span>
                 </button>
+                <button class="nav-item" data-page="workPortal">
+                    <i data-lucide="clipboard-check"></i>
+                    <span>WORK PORTAL</span>
+                </button>
                 <button class="nav-item" data-page="gamification">
                     <i data-lucide="brain-circuit"></i>
                     <span>RL GAMIFICATION</span>
@@ -135,6 +139,29 @@
                     <span>ATTENDANCE</span>
                 </button>
             </nav>
+
+            <div class="work-class-panel">
+                <div class="work-class-header">
+                    <span>Class Work Filter</span>
+                    <strong id="workPortalClassLabel">6th A</strong>
+                </div>
+                <button class="work-portal-open-btn" id="openWorkPortalBtn" type="button">
+                    <i data-lucide="clipboard-check"></i>
+                    <span>OPEN WORK PORTAL</span>
+                </button>
+                <div class="work-class-grid" id="workClassGrid">
+                    <button class="work-class-badge active" data-work-class="6th A">6th A</button>
+                    <button class="work-class-badge" data-work-class="6th B">6th B</button>
+                    <button class="work-class-badge" data-work-class="7th A">7th A</button>
+                    <button class="work-class-badge" data-work-class="7th B">7th B</button>
+                    <button class="work-class-badge" data-work-class="8th A">8th A</button>
+                    <button class="work-class-badge" data-work-class="8th B">8th B</button>
+                    <button class="work-class-badge" data-work-class="9th A">9th A</button>
+                    <button class="work-class-badge" data-work-class="9th B">9th B</button>
+                    <button class="work-class-badge" data-work-class="10th A">10th A</button>
+                    <button class="work-class-badge" data-work-class="10th B">10th B</button>
+                </div>
+            </div>
 
             <div class="sidebar-bottom">
                 <div class="class-level">
@@ -259,6 +286,33 @@
                         </div>
                     </div>
 
+                    <div class="panel student-feature-panel">
+                        <div class="panel-header">
+                            <div>
+                                <h2>Student Performance Center</h2>
+                                <p>Individual student progress, assignment, and communication tools</p>
+                            </div>
+                            <div class="student-header-actions">
+                                <button class="secondary-btn" id="dashboardStudentReportBtn"><i data-lucide="file-text"></i> Open Student Report</button>
+                                <button class="secondary-btn" id="dashboardAssignBtn"><i data-lucide="send"></i> Assign Work</button>
+                            </div>
+                        </div>
+                        <div class="dashboard-feature-grid">
+                            <div class="feature-card">
+                                <h3>Selected Student</h3>
+                                <div id="selectedStudentInfo" class="mini-stat-panel">Select a student from the list below.</div>
+                            </div>
+                            <div class="feature-card">
+                                <h3>Recent Assignments</h3>
+                                <div id="dashboardAssignmentsList" class="mini-list">No assignments created yet.</div>
+                            </div>
+                            <div class="feature-card">
+                                <h3>Notifications</h3>
+                                <div id="dashboardNotificationsList" class="mini-list">No student notifications yet.</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="panel student-progress-panel">
                         <div class="panel-header">
                             <div>
@@ -287,12 +341,98 @@
                     </div>
                 </div>
 
+                    <div class="page" id="workPortalPage">
+                        <div class="page-card">
+                            <div class="page-heading-row">
+                                <div>
+                                    <span class="page-eyebrow">CLASS-WISE STUDENT WORK</span>
+                                    <h1>Upload Work, Grade, and Reward Students</h1>
+                                    <p>Assign tasks by class and reward students based on completed work quality.</p>
+                                </div>
+                            </div>
+
+                            <div class="work-portal-grid">
+                                <div class="panel">
+                                    <div class="panel-header">
+                                        <div>
+                                            <h2>Submit Student Work</h2>
+                                            <p>Upload classroom task submissions for the selected class.</p>
+                                        </div>
+                                    </div>
+
+                                    <form id="studentWorkForm" class="modal-form">
+                                        <label>
+                                            Class
+                                            <select name="className" id="workFormClassSelect" required></select>
+                                        </label>
+                                        <label>
+                                            Student
+                                            <select name="studentId" id="workStudentSelect" required></select>
+                                        </label>
+                                        <label>
+                                            Assignment Title
+                                            <input name="title" type="text" placeholder="Example: Science Project Draft" required>
+                                        </label>
+                                        <label>
+                                            Work Type
+                                            <select name="workType">
+                                                <option>Homework</option>
+                                                <option>Project</option>
+                                                <option>Assignment</option>
+                                                <option>Worksheet</option>
+                                                <option>Notebook</option>
+                                            </select>
+                                        </label>
+                                        <label>
+                                            Work Details
+                                            <textarea name="description" rows="4" placeholder="Describe the task completed by the student..." required></textarea>
+                                        </label>
+                                        <label>
+                                            Attachment
+                                            <input type="file" name="attachment" id="studentWorkAttachment">
+                                        </label>
+                                        <button type="submit" class="primary-btn"><i data-lucide="upload-cloud"></i> Upload Student Work</button>
+                                    </form>
+                                </div>
+
+                                <div class="panel">
+                                    <div class="panel-header">
+                                        <div>
+                                            <h2>Teacher Grade &amp; Rewards</h2>
+                                            <p>Review work submissions and award RL points.</p>
+                                        </div>
+                                    </div>
+                                    <div id="studentWorkSubmissionList" class="submission-list">
+                                        <div class="empty-state">No work submitted in this class yet.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 <!-- 2. GAMIFICATION & RL ENGINE PAGE -->
                 <div class="page" id="gamificationPage">
                     <div class="page-card">
                         <div class="page-heading-row">
                             <div>
                                 <span class="page-eyebrow">REINFORCEMENT LEARNING ALGORITHM</span>
+
+                        <div class="work-division-section">
+                            <div class="panel-header">
+                                <div>
+                                    <h2>Select Division</h2>
+                                    <p>Choose a class section to view its enrolled students and submitted work.</p>
+                                </div>
+                            </div>
+                            <div class="work-division-grid" id="workDivisionGrid"></div>
+                            <div class="work-student-heading">
+                                <h2 id="workSelectedDivisionTitle">Students in 6th A</h2>
+                                <span id="workStudentCount" class="student-profile-tag">0 students</span>
+                            </div>
+                            <div class="work-student-list" id="workPortalStudentList">
+                                <div class="empty-state">No students returned from Supabase for this division.</div>
+                            </div>
+                        </div>
                                 <h1>Gamification &amp; Adaptive RL Engine</h1>
                                 <p>Creates customized quiz pathways by evaluating Q-Table values for each student performance state.</p>
                             </div>
@@ -497,6 +637,42 @@
                     </select>
                 </label>
                 <button type="submit" class="primary-btn">Save &amp; Enable RL Adaptive Quiz</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="assignmentModal">
+        <div class="modal-content">
+            <button class="modal-close" data-close="assignmentModal"><i data-lucide="x"></i></button>
+            <h2>Assign Student Work</h2>
+            <form id="assignmentForm" class="modal-form">
+                <input type="hidden" name="studentId">
+                <label>Assignment Title <input name="title" type="text" placeholder="e.g. Algebra Revision Task" required></label>
+                <label>Type
+                    <select name="type">
+                        <option value="Classroom">Classroom</option>
+                        <option value="Course">Course</option>
+                        <option value="Lesson">Lesson</option>
+                        <option value="Game">Game</option>
+                        <option value="Activity">Activity</option>
+                    </select>
+                </label>
+                <label>Assignment Details <textarea name="content" rows="3" placeholder="Describe the task, learning objective, or game to complete..." required></textarea></label>
+                <label>Teacher Notes <textarea name="notes" rows="3" placeholder="Optional teacher remarks or due date..."></textarea></label>
+                <button type="submit" class="primary-btn">Send Assignment &amp; Notify Student</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="studentInteractionModal">
+        <div class="modal-content">
+            <button class="modal-close" data-close="studentInteractionModal"><i data-lucide="x"></i></button>
+            <h2>Message Student / Share Notes</h2>
+            <form id="studentInteractionForm" class="modal-form">
+                <input type="hidden" name="studentId">
+                <label>Subject <input name="subject" type="text" placeholder="e.g. Revision notes / Doubt clarification" required></label>
+                <label>Message / Notes <textarea name="message" rows="4" placeholder="Share notes, guidance, or answer the student query..." required></textarea></label>
+                <button type="submit" class="primary-btn">Send to Student &amp; Email Notification</button>
             </form>
         </div>
     </div>
