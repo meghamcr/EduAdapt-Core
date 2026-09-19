@@ -211,6 +211,8 @@ test('separately grounded prerequisite persists against prerequisite node and re
   assert.equal(out.storedPackage.academicGrounding.prerequisiteFor.nodeId, context.curriculum.nodeId);
   assert.equal(f.db.trace.filter(e => e.operation === 'lock').length, 2);
   assert.ok(await f.service.findReusableGame(input));
+  const reloaded = await f.db.$transaction(tx => f.service.loadValidatedGameInTransaction(tx, out.gameSpecId), { isolationLevel: 'Serializable' });
+  assert.deepEqual(reloaded.storedPackage, out.storedPackage);
 });
 test('unique slug conflict from another committed writer converges on that row', async () => {
   const f = await setup(); let collision = true;

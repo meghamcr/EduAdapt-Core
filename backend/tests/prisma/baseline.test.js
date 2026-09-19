@@ -13,8 +13,7 @@ test('baseline reference is nondeployable and preserves checkpoint schema/histor
   assert.equal(reference.productionReconciliationApproved, false);
   assert.equal(hash(path.join(root, reference.schema.path)), reference.schema.sha256);
   for (const migration of reference.historicalMigrations) assert.equal(hash(path.join(root, migration.path)), migration.sha256);
-  assert.deepEqual(fs.readdirSync(path.join(root, 'migrations')).sort(), [...reference.historicalMigrations.map(m => m.name), '20260919000100_curriculum_artifact_storage'].sort());
-});
+  assert.deepEqual(fs.readdirSync(path.join(root, 'migrations')).sort(), [...reference.historicalMigrations.map(m => m.name), '20260919000100_curriculum_artifact_storage', '20260919000200_gameplay_evidence'].sort());});
 
 test('reference records the unresolved completed-ledger checksum discrepancy', () => {
   const adaptive = reference.historicalMigrations.find(m => m.name.endsWith('adaptive_learning'));

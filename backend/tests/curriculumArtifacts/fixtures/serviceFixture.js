@@ -19,8 +19,8 @@ const names = ['curriculumArtifactIdentity', 'curriculumArtifactVersion', 'curri
 function matches(row, where = {}) {
   return Object.entries(where).every(([k,v]) => k === 'OR' ? v.some(part => matches(row,part)) : k === 'AND' ? v.every(part => matches(row,part)) : v && Array.isArray(v.in) ? v.in.includes(row[k]) : v && typeof v.startsWith === 'string' ? typeof row[k] === 'string' && row[k].startsWith(v.startsWith) : equal(row[k], v));
 }
-function database({ includeGameSpec = false } = {}) {
-  const modelNames = includeGameSpec ? [...names, 'gameSpec'] : names;
+function database({ includeGameSpec = false, includeGameplay = false } = {}) {
+  const modelNames = [...names, ...(includeGameSpec || includeGameplay ? ['gameSpec'] : []), ...(includeGameplay ? ['curriculumNodeMastery', 'gameplayEvidenceSession', 'gameplayEvidenceEvent'] : [])];
   const fake = { state: Object.fromEntries(modelNames.map(n => [n, []])), trace: [], hook: null };
   let queue = Promise.resolve();
   fake.$disconnect = async () => {};
@@ -44,6 +44,8 @@ function database({ includeGameSpec = false } = {}) {
             const row = { id: `synthetic-${name}-${rows.length}`, ...structuredClone(args.data) };
             const unique = { gameSpec: ['slug'], curriculumBook: ['board','grade','subject','title'], curriculumChapter: ['bookId','chapterNumber'], curriculumArtifactVersion: ['artifactChecksum'], curriculumArtifactReview: ['versionId','revision'], curriculumArtifactImport: ['versionId','chapterId'] }[name];
             if (rows.some(r => r.id === row.id || unique && unique.every(k => equal(r[k],row[k])))) throw Object.assign(new Error('synthetic unique conflict'), {code:'P2002'});
+            const constraints = { curriculumNodeMastery: [['learnerId','artifactVersionId','nodeId']], gameplayEvidenceSession: [['learnerId','creationKey']], gameplayEvidenceEvent: [['sessionId','eventKey'],['sessionId','sequence'],['scopeId','scopeSequence']] }[name] || [];
+            if (constraints.some(keys => rows.some(r => keys.every(k => equal(r[k],row[k]))))) throw Object.assign(new Error('synthetic unique conflict'), {code:'P2002'});
             if (name === 'curriculumNode' && row.parentId && !rows.some(r => r.id === row.parentId)) throw new Error('Parent missing');
             rows.push(row); return structuredClone(row);
           }

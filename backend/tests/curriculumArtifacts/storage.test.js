@@ -75,7 +75,8 @@ test('provenance preserves source references, checksums, pages and extraction me
 test('objective evidence remains aligned with objective text, with no mastery linkage', () => {
   const a = artifact(), p = prepare(a).version;
   assert.deepEqual(p.objectives, [{ text: a.learning_objectives[0], evidence: ref }]);
-  assert.doesNotMatch(model(schema, 'CurriculumArtifactVersion'), /Student|Mastery|LearningObjective\[\]/);
+  // Phase 3F permits this reverse relation for artifact+node evidence only.
+  assert.doesNotMatch(model(schema, 'CurriculumArtifactVersion').replace('  curriculumNodeMasteries CurriculumNodeMastery[]\n', ''), /Student|Mastery|LearningObjective\[\]/);
 });
 test('old curriculum needs no invented provenance, model, author or approval', () => {
   const v = prepare(curriculum()).version;
@@ -95,11 +96,14 @@ test('multiple editions coexist without changing source node IDs', () => {
   const unspecified = { ...a }; delete unspecified.edition;
   assert.notEqual(prepare(unspecified).identity.id, prepare(a).identity.id);
 });
-test('recursive hierarchy has no fixed depth and existing node schema stays byte-identical', () => {
+test('recursive hierarchy and existing node fields stay byte-identical apart from Phase 3F reverse relations', () => {
   const a = curriculum();
   for (let i = 0; i < 12; i++) a.nodes.push({ ...a.nodes[1], id: `deeper-${i}`, parent_id: i ? `deeper-${i-1}` : 'worked', title: `Level ${i}`, content: `Distinct educational explanation at recursive depth ${i}.` });
   assert.deepEqual(prepare(a).version.snapshot.nodes, a.nodes);
-  assert.equal(model(schema, 'CurriculumNode'), model(old, 'CurriculumNode'));
+  const originalFields = model(schema, 'CurriculumNode')
+    .replace('  gameplayEvidenceSessions GameplayEvidenceSession[]\n', '')
+    .replace('  curriculumNodeMasteries CurriculumNodeMastery[]\n', '');
+  assert.equal(originalFields, model(old, 'CurriculumNode'));
   assert.equal(model(schema, 'CurriculumBook'), model(old, 'CurriculumBook'));
 });
 test('review lifecycle has explicit states and optimistic concurrency metadata', () => {
@@ -146,7 +150,7 @@ test('proposed SQL only adds objects, never mutates legacy rows or migration his
   assert.equal(alters.length, 7); alters.forEach(s => assert.match(s, / ADD (COLUMN|CONSTRAINT) /));
   assert.equal((sql.match(/CREATE TABLE /g) || []).length, 4);
   assert.match(sql, /payload is immutable/); assert.match(sql, /history is append-only/);
-  assert.deepEqual(fs.readdirSync(path.join(root, 'prisma/migrations')).sort(), ['20260820231000_adaptive_learning', '20260820231100_add_level_table', '20260919000100_curriculum_artifact_storage']);
+  assert.deepEqual(fs.readdirSync(path.join(root, 'prisma/migrations')).sort(), ['20260820231000_adaptive_learning', '20260820231100_add_level_table', '20260919000100_curriculum_artifact_storage', '20260919000200_gameplay_evidence']);
   assert.equal(fs.readFileSync(path.join(root, 'prisma/migrations/20260919000100_curriculum_artifact_storage/migration.sql'), 'utf8'), sql);
 });
 test('all new Prisma storage fields have matching SQL columns and nullability', () => {

@@ -241,3 +241,11 @@ perform controlled provider and playthrough acceptance, then implement validated
 telemetry and learner updates. Source-recall-only generation, unestablished
 node-objective applicability and unvalidated higher-order reasoning remain explicit
 limits. Persistence does not remove them or certify educational effectiveness.
+
+Phase 3F adds an internal `loadValidatedGameInTransaction(tx, gameSpecId)` read path
+for durable sessions. It reloads a stored variant, reconstructs the persisted
+instructional contract solely for validation, rebuilds fresh Phase 3B context(s),
+and verifies the exact Phase 3E envelope. It neither accepts browser game JSON nor
+mints a new Phase 3C decision. This trusted scoring read contains answer keys and
+must not be returned as a public runtime payload. See
+[gameplay-evidence.md](gameplay-evidence.md) for the separate execution gate.

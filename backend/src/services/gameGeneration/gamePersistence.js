@@ -162,6 +162,40 @@ function createGamePersistenceService(db) {
       return row ? returned(row, true) : null;
     });
   }
-  return Object.freeze({ persistValidatedGame, findReusableGame });
+  async function loadValidatedGameInTransaction(tx, gameSpecId) {
+    // Reload from trusted storage, never caller game JSON. Reconstruct the stored
+    // instructional CONTRACT for validation, not a new adaptive learner decision.
+    const row = await tx.gameSpec.findUnique({ where: { id: gameSpecId } });
+    if (!row?.curriculumArtifactVersionId || !row.curriculumNodeId || row.spec?.storageVersion !== STORAGE_VERSION) fail('GROUNDED_GAME_REQUIRED');
+    const stored = copyJson(row.spec, LIMITS.requestBytes + LIMITS.candidateBytes);
+    const selection = { curriculumArtifactVersionId: row.curriculumArtifactVersionId, curriculumNodeId: row.curriculumNodeId };
+    const forTarget = stored.academicGrounding?.prerequisiteFor;
+    const selections = [selection];
+    if (forTarget) {
+      const imports = await tx.curriculumArtifactImport.findMany({ where: { versionId: forTarget.artifactVersionId } });
+      if (imports.length !== 1 || !imports[0].nodeMapping[forTarget.nodeId]) fail('GROUNDED_GAME_REQUIRED');
+      selections.push({ curriculumArtifactVersionId: forTarget.artifactVersionId, curriculumNodeId: imports[0].nodeMapping[forTarget.nodeId] });
+    }
+    const loaded = new Map();
+    for (const s of [...selections].sort((a,b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))) loaded.set(JSON.stringify(s), await contexts.buildInTransaction(tx, s));
+    const selected = loaded.get(JSON.stringify(selection));
+    const policy = stored.game?.instructionalPolicy;
+    function contract(context, mode, blocked = false) {
+      const c = context.curriculum;
+      return freeze({ decisionVersion: POLICY.version,
+        academicDecision: { artifactVersionId: c.artifactVersionId, targetNodeId: c.nodeId, mappedNodeId: c.mappedNodeId, mode,
+          dependentWorkAllowed: !blocked, requiresSeparatelyGroundedPrerequisiteContext: blocked,
+          prerequisiteStatus: { dependentWorkAllowed: !blocked, unresolved: blocked ? [{ artifactVersionId: selected.curriculum.artifactVersionId, nodeId: selected.curriculum.nodeId, relationshipId: forTarget.relationshipId }] : [] } },
+        instructionalDecision: policy, evidence: { learnerId: 'stored-contract-validation' },
+        constraints: { academicScopeLocked: true, difficultyCannotExpandScope: true, allowAcademicInference: false, automaticNodeCombinationAllowed: false, hierarchyImpliesPrerequisites: false }
+      });
+    }
+    const input = forTarget ? { context: loaded.get(JSON.stringify(selections[1])), prerequisite: { context: selected, decision: contract(selected, 'PRIMARY') } } : { context: selected };
+    input.decision = contract(input.context, stored.game.academicMode, Boolean(forTarget));
+    input.request = buildGenerationRequest(input);
+    if (!verifiedRow(row, input)) fail('STORED_GAME_INVALID');
+    return returned(row, true);
+  }
+  return Object.freeze({ persistValidatedGame, findReusableGame, loadValidatedGameInTransaction });
 }
 module.exports = { createGamePersistenceService, GamePersistenceError, STORAGE_VERSION, STATUS };

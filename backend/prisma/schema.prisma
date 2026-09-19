@@ -107,6 +107,8 @@ model SchoolClass {
 }
 
 model User {
+  gameplayEvidenceSessions GameplayEvidenceSession[]
+  curriculumNodeMasteries CurriculumNodeMastery[]
   id           String   @id @default(uuid())
   name         String
   email        String   @unique
@@ -589,6 +591,8 @@ model CurriculumChapter {
 }
 
 model CurriculumNode {
+  gameplayEvidenceSessions GameplayEvidenceSession[]
+  curriculumNodeMasteries CurriculumNodeMastery[]
   id          String   @id
   chapterId   String
   parentId    String?
@@ -611,6 +615,7 @@ model CurriculumNode {
 }
 
 model GameSpec {
+  gameplayEvidenceSessions GameplayEvidenceSession[]
   id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
   slug  String @unique
@@ -692,6 +697,8 @@ model CurriculumArtifactIdentity {
 }
 
 model CurriculumArtifactVersion {
+  gameplayEvidenceSessions GameplayEvidenceSession[]
+  curriculumNodeMasteries CurriculumNodeMastery[]
   id String @id
   identityId String
   artifactChecksum String @unique
@@ -752,4 +759,74 @@ model CurriculumArtifactImport {
   chapter CurriculumChapter @relation(fields: [chapterId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   @@unique([versionId, chapterId])
   @@index([chapterId, importedAt])
+}
+
+// Phase 3F: additive proposal only, not deployed. Raw events remain authoritative;
+// mastery/state are reproducible projections. No legacy Topic/Subtopic mapping.
+model CurriculumNodeMastery {
+  id String @id
+  learnerId String
+  artifactVersionId String
+  nodeId String
+  nextSequence Int @default(0)
+  status String @default("UNKNOWN")
+  sampleSize Int @default(0)
+  policyVersion String
+  learner User @relation(fields: [learnerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  artifact CurriculumArtifactVersion @relation(fields: [artifactVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  node CurriculumNode @relation(fields: [nodeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sessions GameplayEvidenceSession[]
+  events GameplayEvidenceEvent[]
+  @@unique([learnerId, artifactVersionId, nodeId])
+}
+
+model GameplayEvidenceSession {
+  id String @id
+  learnerId String
+  gameSpecId String @db.Uuid
+  artifactVersionId String
+  nodeId String
+  scopeId String
+  specificationChecksum String
+  contractVersion String
+  difficulty String
+  adaptiveMode String
+  creationKey String
+  runtimeAuthorizationReference String
+  status String @default("CREATED")
+  state Json
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  learner User @relation(fields: [learnerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  game GameSpec @relation(fields: [gameSpecId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  artifact CurriculumArtifactVersion @relation(fields: [artifactVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  node CurriculumNode @relation(fields: [nodeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  scope CurriculumNodeMastery @relation(fields: [scopeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  events GameplayEvidenceEvent[]
+  @@unique([learnerId, creationKey])
+  @@index([scopeId, createdAt])
+}
+
+model GameplayEvidenceEvent {
+  id String @id
+  sessionId String
+  scopeId String
+  eventKey String
+  sequence Int
+  scopeSequence Int
+  payloadFingerprint String
+  type String
+  phaseId String?
+  challengeId String?
+  attempt Int?
+  correctness Boolean?
+  responseTimeMs Int?
+  // Bounded client interaction, never caller correctness/score/academic identity.
+  payload Json
+  derivedTypes Json
+  observedAt DateTime @db.Timestamptz(6)
+  session GameplayEvidenceSession @relation(fields: [sessionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  scope CurriculumNodeMastery @relation(fields: [scopeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([sessionId, eventKey])
+  @@unique([sessionId, sequence])
+  @@unique([scopeId, scopeSequence])
 }
