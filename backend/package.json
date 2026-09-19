@@ -10,7 +10,8 @@
     "test:prisma": "node --test tests/prisma/*.test.js",
     "test:artifacts": "node --test tests/curriculumArtifacts/*.test.js",
     "test:generation-context": "node --test tests/gameGeneration/generationContext.test.js",
-    "test:adaptive": "node --test tests/adaptiveLearning/*.test.js"
+    "test:adaptive": "node --test tests/adaptiveLearning/*.test.js",
+    "test:game-generation": "node --test tests/gameGeneration/gameGeneration.test.js"
   },
   "keywords": [],
   "author": "",
