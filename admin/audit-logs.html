@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Audit Logs</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Audit Logs</h1>
+
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Action</th>
+            <th>Performed By</th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="logsTableBody">
+          <tr><td colspan="4">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    function formatMetadata(metadata) {
+      if (!metadata) return '—';
+      return Object.entries(metadata)
+        .map(([key, val]) => `${key}: ${val}`)
+        .join(', ');
+    }
+
+    async function loadLogs() {
+      const tbody = document.getElementById('logsTableBody');
+      try {
+        const data = await apiRequest('/audit-logs');
+        if (data.logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4">No audit logs yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.logs.map(log => `
+          <tr>
+            <td>${new Date(log.createdAt).toLocaleString()}</td>
+            <td>${log.action}</td>
+            <td>${log.performedBy ? `${log.performedBy.name} (${log.performedBy.email})` : 'Unknown'}</td>
+            <td>${formatMetadata(log.metadata)}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    loadLogs();
+  </script>
+</body>
+</html>
