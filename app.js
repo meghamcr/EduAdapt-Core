@@ -13,7 +13,12 @@ const state = {
     events: [],
     tickets: [],
     attendance: [],
+    assignments: [],
+    notifications: [],
+    studentQueries: [],
+    studentWork: [],
     selectedClass: "All Classes",
+    workClass: "6th A",
     calendarDate: new Date(),
     chart: null,
     localMode: false
@@ -89,9 +94,16 @@ function bindStaticControls() {
     $("#quizForm")?.addEventListener("submit", saveQuiz);
     $("#addStudentBtn")?.addEventListener("click", openStudentModal);
     $("#studentForm")?.addEventListener("submit", saveStudent);
+    $("#assignmentForm")?.addEventListener("submit", submitAssignment);
+    $("#studentWorkForm")?.addEventListener("submit", submitStudentWork);
+    $("#studentInteractionForm")?.addEventListener("submit", submitStudentQuery);
     $("#editPrefBtn")?.addEventListener("click", editPreferences);
     $("#createAssessmentBtn")?.addEventListener("click", openQuizModal);
     $("#saveAttendanceBtn")?.addEventListener("click", saveAttendance);
+    $("#openWorkPortalBtn")?.addEventListener("click", () => {
+        $$(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.page === "workPortal"));
+        showPage("workPortal");
+    });
 
     $$(".modal-close").forEach(button => button.addEventListener("click", () => closeModal(button.dataset.close)));
     window.addEventListener("click", event => {
@@ -99,9 +111,258 @@ function bindStaticControls() {
     });
 
     initializeFileUpload();
+    initializeWorkPortalControls();
     initializeCalendar();
     initializeAdminTickets();
     initializeChatbot();
+}
+
+function initializeWorkPortalControls() {
+    $$(".work-class-badge").forEach(button => button.addEventListener("click", () => {
+        const selected = button.dataset.workClass;
+        state.workClass = selected;
+        $$(".work-class-badge").forEach(item => item.classList.toggle("active", item.dataset.workClass === selected));
+        const label = $("#workPortalClassLabel");
+        if (label) label.textContent = selected;
+        renderWorkPortal();
+    }));
+
+    const classSelect = $("#workFormClassSelect");
+    if (classSelect) {
+        classSelect.addEventListener("change", () => populateStudentWorkDropdown());
+    }
+
+    $("#studentWorkAttachment")?.addEventListener("change", event => {
+        const fileName = event.target.files?.[0]?.name;
+        if (fileName) $("#studentWorkAttachment").setAttribute("data-filename", fileName);
+    });
+}
+
+function getClassOptions() {
+    const defaults = ["6th A","6th B","7th A","7th B","8th A","8th B","9th A","9th B","10th A","10th B"];
+    const names = [...new Set([
+        ...defaults,
+        ...state.classes.map(record => record.grade ? `${record.grade}${record.section ? ` ${record.section}` : ""}` : (record.name || record.class_name || record.class_section || "")),
+        ...state.students.map(classValue),
+        state.teacher?.className,
+        state.workClass
+    ].filter(Boolean))];
+
+    return names.sort((left, right) => {
+        const order = { "6th": 1, "7th": 2, "8th": 3, "9th": 4, "10th": 5 };
+        const leftNumber = Number(String(left).replace(/[^0-9]/g, ""));
+        const rightNumber = Number(String(right).replace(/[^0-9]/g, ""));
+        const leftSection = String(left).includes("A") ? 1 : 2;
+        const rightSection = String(right).includes("A") ? 1 : 2;
+        const leftGrade = String(left).replace(/\s.*$/, "");
+        const rightGrade = String(right).replace(/\s.*$/, "");
+        return (order[leftGrade] || 99) - (order[rightGrade] || 99) || (leftNumber - rightNumber) || (leftSection - rightSection);
+    });
+}
+
+function renderWorkClassFilters() {
+    const container = $("#workClassGrid");
+    if (!container) return;
+    const classes = getClassOptions();
+    container.innerHTML = classes.map(item => `<button class="work-class-badge ${state.workClass === item ? "active" : ""}" data-work-class="${escapeHTML(item)}">${escapeHTML(item)}</button>`).join("");
+    $$(".work-class-badge").forEach(button => button.addEventListener("click", () => {
+        const selected = button.dataset.workClass;
+        state.workClass = selected;
+        $$(".work-class-badge").forEach(item => item.classList.toggle("active", item.dataset.workClass === selected));
+        const label = $("#workPortalClassLabel");
+        if (label) label.textContent = selected;
+        renderWorkPortal();
+    }));
+    const label = $("#workPortalClassLabel");
+    if (label) label.textContent = state.workClass;
+    const workClassSelect = $("#workFormClassSelect");
+    if (workClassSelect) {
+        workClassSelect.innerHTML = classes.map(item => `<option value="${escapeHTML(item)}">${escapeHTML(item)}</option>`).join("");
+        workClassSelect.value = state.workClass;
+    }
+    renderWorkDivisionGrid(classes);
+}
+
+function renderWorkDivisionGrid(classes) {
+    const grid = $("#workDivisionGrid");
+    if (!grid) return;
+    grid.innerHTML = classes.map(item => `<button type="button" class="work-division-btn ${normalizedClass(state.workClass) === normalizedClass(item) ? "active" : ""}" data-division-class="${escapeHTML(item)}">${escapeHTML(item)}</button>`).join("");
+    $$('[data-division-class]').forEach(button => button.addEventListener("click", () => {
+        state.workClass = button.dataset.divisionClass;
+        renderWorkPortal();
+    }));
+}
+
+function populateStudentWorkDropdown() {
+    const select = $("#workStudentSelect");
+    const classSelect = $("#workFormClassSelect");
+    if (!select || !classSelect) return;
+    const selectedClass = classSelect.value || state.workClass;
+    const students = state.students.filter(student => normalizedClass(classValue(student)) === normalizedClass(selectedClass));
+    select.innerHTML = students.length
+        ? students.map(student => `<option value="${escapeHTML(String(student.id))}">${escapeHTML(student.name || "Student")}</option>`).join("")
+        : `<option value="">No students in this class</option>`;
+}
+
+function renderWorkPortal() {
+    renderWorkClassFilters();
+    populateStudentWorkDropdown();
+    const list = $("#studentWorkSubmissionList");
+    if (!list) return;
+    const selectedClass = state.workClass || "6th A";
+    const selectedStudents = state.students.filter(student => normalizedClass(classValue(student)) === normalizedClass(selectedClass));
+    const studentList = $("#workPortalStudentList");
+    const studentCount = $("#workStudentCount");
+    const selectedTitle = $("#workSelectedDivisionTitle");
+    if (selectedTitle) selectedTitle.textContent = `Students in ${selectedClass}`;
+    if (studentCount) studentCount.textContent = `${selectedStudents.length} student${selectedStudents.length === 1 ? "" : "s"}`;
+    if (studentList) {
+        studentList.innerHTML = selectedStudents.length ? selectedStudents.map(student => `
+            <div class="work-student-card">
+                <div><strong>${escapeHTML(student.name || "Student")}</strong><p>${escapeHTML(student.email || "No email")} · ${escapeHTML(student.roll || student.student_id || "Student ID unavailable")}</p></div>
+                <button type="button" class="secondary-btn" data-select-work-student="${escapeHTML(String(student.id))}">Select</button>
+            </div>
+        `).join("") : `<div class="empty-state">No students returned from Supabase for ${escapeHTML(selectedClass)}.</div>`;
+        $$('[data-select-work-student]').forEach(button => button.addEventListener("click", () => {
+            const classSelect = $("#workFormClassSelect");
+            const studentSelect = $("#workStudentSelect");
+            if (classSelect) classSelect.value = selectedClass;
+            populateStudentWorkDropdown();
+            if (studentSelect) studentSelect.value = button.dataset.selectWorkStudent;
+            $("#studentWorkForm")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }));
+    }
+    const submissions = state.studentWork.filter(item => normalizedClass(item.className || item.class_name) === normalizedClass(selectedClass));
+
+    if (!submissions.length) {
+        list.innerHTML = `<div class="empty-state">No work submitted in ${selectedClass} yet.</div>`;
+        return;
+    }
+
+    list.innerHTML = submissions.map(submission => `
+        <div class="submission-card" data-submission-id="${escapeHTML(String(submission.id))}">
+            <div class="submission-head">
+                <strong>${escapeHTML(submission.title || "Assignment")}</strong>
+                <span class="submission-status ${submission.grade ? "graded" : ""}">${submission.grade ? "Graded" : "Pending"}</span>
+            </div>
+            <p><strong>Student:</strong> ${escapeHTML(submission.studentName || "Student")}</p>
+            <p><strong>Type:</strong> ${escapeHTML(submission.workType || "Task")}</p>
+            <p>${escapeHTML(submission.description || "No details provided.")}</p>
+            <div class="grade-controls">
+                <select data-grade-select="${escapeHTML(String(submission.id))}">
+                    <option value="A" ${submission.grade === "A" ? "selected" : ""}>A</option>
+                    <option value="B" ${submission.grade === "B" ? "selected" : ""}>B</option>
+                    <option value="C" ${submission.grade === "C" ? "selected" : ""}>C</option>
+                    <option value="D" ${submission.grade === "D" ? "selected" : ""}>D</option>
+                    <option value="E" ${submission.grade === "E" ? "selected" : ""}>E</option>
+                </select>
+                <input type="number" min="0" max="50" step="1" value="${Number(submission.reward || 0)}" data-reward-input="${escapeHTML(String(submission.id))}" aria-label="Reward points">
+                <button class="primary-btn sm" data-grade-work="${escapeHTML(String(submission.id))}">Save Grade</button>
+            </div>
+        </div>
+    `).join("");
+
+    $$("[data-grade-work]").forEach(button => button.addEventListener("click", () => {
+        const id = button.dataset.gradeWork;
+        const grade = $(`[data-grade-select="${CSS.escape(id)}"]`)?.value || "B";
+        const reward = Number($(`[data-reward-input="${CSS.escape(id)}"]`)?.value || 0);
+        applyStudentWorkGrade(id, grade, reward);
+    }));
+}
+
+async function applyStudentWorkGrade(id, grade, reward) {
+    const item = state.studentWork.find(record => String(record.id) === String(id));
+    if (!item) return;
+    item.grade = grade;
+    item.reward = Number(reward || 0);
+    item.status = "Graded";
+    if (supabaseClient) {
+        const { error } = await supabaseClient.from("student_work_submissions").update({ grade, reward_points: item.reward, status: item.status }).eq("id", id);
+        if (error) {
+            showToast(`Grade could not be saved to Supabase: ${error.message}`);
+            return;
+        }
+    } else {
+        writeLocal("studentWork", state.studentWork);
+    }
+    showToast(`${item.studentName || "Student"} graded ${grade} and awarded ${reward} RL points.`);
+    renderWorkPortal();
+}
+
+async function submitStudentWork(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const studentId = String(data.get("studentId") || "");
+    const selectedClass = String(data.get("className") || state.workClass || "6th A");
+    const student = state.students.find(item => String(item.id) === String(studentId));
+
+    if (!studentId || !selectedClass) {
+        showToast("Select a student and class before submitting work.");
+        return;
+    }
+
+    const file = $("#studentWorkAttachment")?.files?.[0];
+    const record = {
+        id: `work-${Date.now()}`,
+        className: selectedClass,
+        studentId,
+        studentName: student?.name || "Student",
+        title: String(data.get("title") || "Submitted work").trim(),
+        workType: String(data.get("workType") || "Homework").trim(),
+        description: String(data.get("description") || "").trim(),
+        attachment: file ? file.name : "No file attached",
+        grade: "",
+        reward: 0,
+        status: "Pending",
+        createdAt: new Date().toISOString()
+    };
+
+    if (supabaseClient) {
+        try {
+            let attachmentPath = null;
+            if (file) {
+                attachmentPath = `${state.teacher?.id || "teacher"}/${Date.now()}-${file.name}`;
+                const upload = await supabaseClient.storage.from("student-work").upload(attachmentPath, file);
+                if (upload.error) {
+                    showToast(`File upload failed: ${upload.error.message}`);
+                    return;
+                }
+            }
+            const { data: saved, error } = await supabaseClient.from("student_work_submissions").insert({
+                class_name: selectedClass,
+                student_id: studentId,
+                student_name: record.studentName,
+                title: record.title,
+                work_type: record.workType,
+                description: record.description,
+                attachment_name: record.attachment,
+                attachment_path: attachmentPath,
+                grade: record.grade,
+                reward_points: record.reward,
+                status: record.status,
+                teacher_id: state.teacher?.id || null,
+                created_at: record.createdAt
+            }).select().single();
+            if (error) {
+                showToast(`Student work could not be saved: ${error.message}`);
+                return;
+            }
+            record.id = saved.id;
+        } catch (error) {
+            showToast(`Student work storage unavailable: ${error.message}`);
+            return;
+        }
+    } else {
+        writeLocal("studentWork", [record, ...readLocal("studentWork")]);
+    }
+
+    state.studentWork.unshift(record);
+    state.workClass = selectedClass;
+    form.reset();
+    $("#studentWorkAttachment").value = "";
+    renderWorkPortal();
+    showToast("Student work uploaded for grading.");
 }
 
 async function signInTeacher(event) {
@@ -210,6 +471,7 @@ async function loadPortalData() {
         state.events = readLocal("events");
         state.tickets = readLocal("tickets");
         state.attendance = readLocal("attendance");
+        state.studentWork = readLocal("studentWork");
         return;
     }
 
@@ -222,7 +484,11 @@ async function loadPortalData() {
         supabaseClient.from("GameSession").select("id,studentId,gameId,score,accuracy,xpEarned,playedAt,completion"),
         supabaseClient.from("game_play_session").select("id,game_slug,student_id,score,accuracy,completion,created_at"),
         supabaseClient.from("calendar_events").select("*"),
-        supabaseClient.from("admin_tickets").select("*").order("created_at", { ascending: false })
+        supabaseClient.from("admin_tickets").select("*").order("created_at", { ascending: false }),
+        supabaseClient.from("student_assignments").select("*").order("created_at", { ascending: false }),
+        supabaseClient.from("student_notifications").select("*").order("created_at", { ascending: false }),
+        supabaseClient.from("student_queries").select("*").order("created_at", { ascending: false }),
+        supabaseClient.from("student_work_submissions").select("*").order("created_at", { ascending: false })
     ]);
     state.classes = queries[1].data || [];
     const classMap = new Map(
@@ -255,6 +521,23 @@ async function loadPortalData() {
     ];
     state.events = queries[7].data || [];
     state.tickets = queries[8].data || [];
+    state.assignments = !queries[9].error ? (queries[9].data || []) : [];
+    state.notifications = !queries[10].error ? (queries[10].data || []) : [];
+    state.studentQueries = !queries[11].error ? (queries[11].data || []) : [];
+    state.studentWork = !queries[12].error ? (queries[12].data || []).map(item => ({
+        ...item,
+        className: item.class_name,
+        studentId: item.student_id,
+        studentName: state.students.find(student => String(student.id) === String(item.student_id))?.name || item.student_name || "Student",
+        workType: item.work_type,
+        attachment: item.attachment_name,
+        reward: item.reward_points,
+        createdAt: item.created_at
+    })) : [];
+    if (queries[9].error) console.warn("Assignments table not available:", queries[9].error.message);
+    if (queries[10].error) console.warn("Notifications table not available:", queries[10].error.message);
+    if (queries[11].error) console.warn("Student queries table not available:", queries[11].error.message);
+    if (queries[12].error) console.warn("Student work table not available:", queries[12].error.message);
     const attendanceResult = await supabaseClient.from("Attendance").select("*");
     state.attendance = attendanceResult.error ? [] : attendanceResult.data || [];
     if (attendanceResult.error && !String(attendanceResult.error.message).toLowerCase().includes("does not exist")) console.warn(attendanceResult.error.message);
@@ -263,6 +546,7 @@ async function loadPortalData() {
 
 function renderAll() {
     updateClassSelector();
+    renderWorkClassFilters();
     const students = filteredStudents();
     const quizzes = filteredQuizzes();
     $("#activeStudents").textContent = students.length;
@@ -272,6 +556,7 @@ function renderAll() {
     $("#averageMastery").textContent = `${mastery.length ? Math.round(mastery.reduce((a, b) => a + b, 0) / mastery.length) : 0}%`;
     $("#totalXP").textContent = `${state.progress.reduce((total, item) => total + Number(item.xp || item.reward || item.credits || 0), 0)} RL-XP`;
     renderStudentTable(students);
+    renderDashboardHighlights();
     renderDashboardQuizzes(quizzes);
     renderGamificationPage();
     renderFiles();
@@ -279,6 +564,7 @@ function renderAll() {
     renderAdminTickets();
     renderAssessments();
     renderAttendance();
+    renderWorkPortal();
     renderXPChart();
 }
 
@@ -294,6 +580,10 @@ function filteredQuizzes() {
 
 function classValue(record) {
     return String(record.class_name || record.className || record.class_section || record.grade || record.classId || "");
+}
+
+function normalizedClass(value) {
+    return String(value || "").replace(/\s+/g, "").toLowerCase();
 }
 
 function updateClassSelector() {
@@ -324,10 +614,69 @@ function renderStudentTable(students) {
             <td><span class="badge-active">${escapeHTML(classValue(student))}</span></td>
             <td><strong>${mastery}%</strong></td>
             <td>${mastery < 50 ? "Needs support" : mastery >= 75 ? "Advanced" : "Developing"}</td>
-            <td><button class="secondary-btn sm" data-student-analysis="${escapeHTML(String(id))}">Analysis</button></td>
+            <td>
+                <div class="table-actions">
+                    <button class="secondary-btn sm" data-student-profile="${escapeHTML(String(id))}">Profile</button>
+                    <button class="primary-btn sm" data-student-assign="${escapeHTML(String(id))}">Assign</button>
+                </div>
+            </td>
         </tr>`;
     }).join("");
-    $$('[data-student-analysis]').forEach(button => button.addEventListener("click", () => showStudentAnalysis(button.dataset.studentAnalysis)));
+    $$('[data-student-profile]').forEach(button => button.addEventListener("click", () => openStudentProfile(button.dataset.studentProfile)));
+    $$('[data-student-assign]').forEach(button => button.addEventListener("click", () => openAssignmentModal(button.dataset.studentAssign)));
+}
+
+function renderDashboardHighlights() {
+    const student = filteredStudents()[0] || null;
+    const selectedBox = $("#selectedStudentInfo");
+    const assignmentBox = $("#dashboardAssignmentsList");
+    const notificationBox = $("#dashboardNotificationsList");
+    const reportBtn = $("#dashboardStudentReportBtn");
+    const assignBtn = $("#dashboardAssignBtn");
+
+    if (reportBtn && student) {
+        reportBtn.onclick = () => openStudentProfile(student.id || student.student_id);
+    }
+
+    if (assignBtn && student) {
+        assignBtn.onclick = () => openAssignmentModal(student.id || student.student_id);
+    }
+
+    if (selectedBox) {
+        if (!student) {
+            selectedBox.innerHTML = "No student records available in this class.";
+            return;
+        }
+        const studentId = student.id || student.student_id || "N/A";
+        const mastery = Number(student.mastery || student.mastery_percentage || 0);
+        selectedBox.innerHTML = `
+            <strong>${escapeHTML(student.name || "Student")}</strong>
+            <div class="mini-row"><span>ID</span><b>${escapeHTML(studentId)}</b></div>
+            <div class="mini-row"><span>Class</span><b>${escapeHTML(classValue(student))}</b></div>
+            <div class="mini-row"><span>Mastery</span><b>${mastery}%</b></div>
+            <div class="mini-row"><span>Status</span><b>${mastery < 50 ? "Needs support" : mastery >= 75 ? "Advanced" : "Developing"}</b></div>
+        `;
+    }
+
+    if (assignmentBox) {
+        const items = state.assignments.slice(0, 3);
+        assignmentBox.innerHTML = items.length ? items.map(item => `
+            <div class="mini-item">
+                <strong>${escapeHTML(item.title || "Assignment")}</strong>
+                <span>${escapeHTML(item.assignment_type || item.type || "Task")}</span>
+            </div>
+        `).join("") : "No assignments created yet.";
+    }
+
+    if (notificationBox) {
+        const items = state.notifications.slice(0, 3);
+        notificationBox.innerHTML = items.length ? items.map(item => `
+            <div class="mini-item">
+                <strong>${escapeHTML(item.title || "Notification")}</strong>
+                <span>${escapeHTML(item.message || item.body || "New notification")}</span>
+            </div>
+        `).join("") : "No student notifications yet.";
+    }
 }
 
 function renderDashboardQuizzes(quizzes) {
@@ -706,16 +1055,307 @@ function renderAdminTickets() {
     container.innerHTML = state.tickets.length ? state.tickets.map(ticket => `<article class="ticket-card"><header><strong>${escapeHTML(ticket.type)}</strong><span>${escapeHTML(ticket.status || "Pending")}</span></header><h4>${escapeHTML(ticket.subject)}</h4><p>${escapeHTML(ticket.message)}</p></article>`).join("") : `<div class="empty-state">No admin messages returned from Supabase.</div>`;
 }
 
-function showStudentAnalysis(studentId) {
+function openStudentProfile(studentId) {
+    const student = state.students.find(item => String(item.id) === String(studentId));
+    if (!student) return;
+
+    const records = state.progress.filter(item => String(item.student_id || item.studentId) === String(studentId));
+    const assignments = state.assignments.filter(item => String(item.student_id || item.studentId) === String(studentId));
+    const notifications = state.notifications.filter(item => String(item.student_id || item.studentId) === String(studentId));
+    const queries = state.studentQueries.filter(item => String(item.student_id || item.studentId) === String(studentId));
+    const attendance = state.attendance.filter(item => String(item.studentId || item.student_id) === String(studentId));
+    const average = records.length ? Math.round(records.reduce((sum, item) => sum + Number(item.score || item.masteryScore || 0), 0) / records.length) : Number(student.mastery || 0);
+    const attendanceRate = attendance.length ? Math.round((attendance.filter(item => String(item.status).toUpperCase() !== "ABSENT").length / attendance.length) * 100) : 0;
+
+    const modal = document.createElement("div");
+    modal.className = "modal open";
+    modal.innerHTML = `
+        <div class="modal-content student-profile-modal">
+            <button class="modal-close" data-close="studentProfileModal"><i data-lucide="x"></i></button>
+            <div class="student-hero">
+                <div class="profile-avatar large">${escapeHTML((student.name || "Student").split(" ").map(word => word[0]).join("").slice(0, 2).toUpperCase() || "ST")}</div>
+                <div>
+                    <span class="student-profile-tag">Student Profile</span>
+                    <h2>${escapeHTML(student.name || "Student")}</h2>
+                    <p>${escapeHTML(student.email || "No email available")} · ${escapeHTML(classValue(student))}</p>
+                </div>
+            </div>
+
+            <div class="student-actions-row">
+                <button class="primary-btn" data-generate-report="${escapeHTML(String(studentId))}">Generate / View Report</button>
+                <button class="secondary-btn" data-assign-profile="${escapeHTML(String(studentId))}">Assign Work</button>
+                <button class="secondary-btn" data-message-student="${escapeHTML(String(studentId))}">Message Student</button>
+            </div>
+
+            <div class="student-analysis-grid">
+                <div class="student-stat-box"><span>Overall Mastery</span><strong>${average}%</strong></div>
+                <div class="student-stat-box"><span>Progress Records</span><strong>${records.length}</strong></div>
+                <div class="student-stat-box"><span>Attendance</span><strong>${attendanceRate}%</strong></div>
+                <div class="student-stat-box"><span>Assignments</span><strong>${assignments.length}</strong></div>
+            </div>
+
+            <div class="student-report-box" id="studentReportBox">
+                <h3>Student Progress Report</h3>
+                <p>Teacher can view the student’s latest performance, assignment status, attendance overview, and communication summary here.</p>
+            </div>
+
+            <div class="student-section-grid">
+                <div class="student-panel">
+                    <h3>Performance Graph</h3>
+                    <div class="chart-container small-chart"><canvas id="studentProgressChart"></canvas></div>
+                </div>
+                <div class="student-panel">
+                    <h3>Latest Progress</h3>
+                    <table class="student-table compact-table">
+                        <thead><tr><th>Item</th><th>Score</th><th>Attempt</th></tr></thead>
+                        <tbody>
+                            ${records.length ? records.slice(0, 5).map(item => `<tr><td>${escapeHTML(item.gameId || item.lessonId || "Progress record")}</td><td>${Number(item.score || item.masteryScore || 0)}%</td><td>${Number(item.attempts || 1)}</td></tr>`).join("") : `<tr><td colspan="3" class="empty-state">No progress record yet.</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="student-section-grid">
+                <div class="student-panel">
+                    <h3>Assignments &amp; Notes</h3>
+                    ${assignments.length ? assignments.map(item => `<div class="assignment-item"><strong>${escapeHTML(item.title || "Assignment")}</strong><span>${escapeHTML(item.assignment_type || item.type || "Task")} · ${escapeHTML(item.content || item.topic || "General")}</span><small>${escapeHTML(new Date(item.created_at || item.assigned_at || Date.now()).toLocaleString())}</small></div>`).join("") : `<div class="empty-state">No assignments sent to this student.</div>`}
+                </div>
+
+                <div class="student-panel">
+                    <h3>Notifications</h3>
+                    ${notifications.length ? notifications.map(item => `<div class="notification-item"><strong>${escapeHTML(item.title || "Notification")}</strong><p>${escapeHTML(item.message || item.body || "New message")}</p><small>${escapeHTML(new Date(item.created_at || item.sent_at || Date.now()).toLocaleString())}</small></div>`).join("") : `<div class="empty-state">No notifications for this student.</div>`}
+                </div>
+            </div>
+
+            <div class="student-panel student-query-panel">
+                <h3>Student Query / Interaction</h3>
+                ${queries.length ? queries.map(item => `<div class="query-item"><strong>${escapeHTML(item.subject || "Student query")}</strong><p>${escapeHTML(item.message || item.query || "No details")}</p><small>${escapeHTML(new Date(item.created_at || item.sent_at || Date.now()).toLocaleString())}</small></div>`).join("") : `<div class="empty-state">No direct student query logged yet.</div>`}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    const closeButton = modal.querySelector(".modal-close");
+    if (closeButton) closeButton.addEventListener("click", () => modal.remove());
+
+    const reportButton = modal.querySelector("[data-generate-report]");
+    if (reportButton) reportButton.addEventListener("click", () => generateStudentReport(studentId, modal));
+
+    const assignButton = modal.querySelector("[data-assign-profile]");
+    if (assignButton) assignButton.addEventListener("click", () => {
+        modal.remove();
+        openAssignmentModal(studentId);
+    });
+
+    const messageButton = modal.querySelector("[data-message-student]");
+    if (messageButton) messageButton.addEventListener("click", () => {
+        modal.remove();
+        openInteractionModal(studentId);
+    });
+
+    if (window.Chart) {
+        const labels = records.length ? records.slice(-6).map((item, index) => `P${index + 1}`) : ["No data"];
+        const values = records.length ? records.slice(-6).map(item => Number(item.score || item.masteryScore || 0)) : [0];
+        const canvas = modal.querySelector("#studentProgressChart");
+        if (canvas) {
+            new Chart(canvas, {
+                type: "line",
+                data: {
+                    labels,
+                    datasets: [{ label: "Student mastery", data: values, borderColor: "#00a982", backgroundColor: "rgba(0,169,130,.15)", tension: 0.4, fill: true }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+            });
+        }
+    }
+
+    if (window.lucide) lucide.createIcons();
+    generateStudentReport(studentId, modal);
+}
+
+function generateStudentReport(studentId, modal) {
     const student = state.students.find(item => String(item.id) === String(studentId));
     if (!student) return;
     const records = state.progress.filter(item => String(item.student_id || item.studentId) === String(studentId));
-    const average = records.length ? Math.round(records.reduce((sum, item) => sum + Number(item.score || 0), 0) / records.length) : Number(student.mastery || 0);
-    const modal = document.createElement("div");
-    modal.className = "modal open";
-    modal.innerHTML = `<div class="modal-content"><button class="modal-close">×</button><h2>${escapeHTML(student.name || "Student")} analysis</h2><p>Class: ${escapeHTML(classValue(student))}</p><div class="student-analysis"><strong>${average}%</strong><span>Average recorded performance</span><strong>${records.length}</strong><span>Recorded game attempts</span></div><p>${records.length ? "Analysis is calculated from stored student progress." : "No progress records have been returned for this student yet."}</p></div>`;
-    document.body.appendChild(modal);
-    modal.querySelector(".modal-close").addEventListener("click", () => modal.remove());
+    const average = records.length ? Math.round(records.reduce((sum, item) => sum + Number(item.score || item.masteryScore || 0), 0) / records.length) : Number(student.mastery || 0);
+    const attendance = state.attendance.filter(item => String(item.studentId || item.student_id) === String(studentId));
+    const attendanceRate = attendance.length ? Math.round((attendance.filter(item => String(item.status).toUpperCase() !== "ABSENT").length / attendance.length) * 100) : 0;
+    const reportBox = modal?.querySelector("#studentReportBox");
+    if (!reportBox) return;
+    reportBox.innerHTML = `
+        <h3>Student Progress Report</h3>
+        <p><strong>Student:</strong> ${escapeHTML(student.name || "Student")} | <strong>Class:</strong> ${escapeHTML(classValue(student))}</p>
+        <p><strong>Teacher:</strong> ${escapeHTML(state.teacher?.name || "Teacher")} | <strong>School ID:</strong> ${escapeHTML(student.schoolId || student.school_id || "N/A")}</p>
+        <div class="student-report-summary">
+            <div><span>Overall mastery</span><strong>${average}%</strong></div>
+            <div><span>Attendance</span><strong>${attendanceRate}%</strong></div>
+            <div><span>Games / assessments</span><strong>${records.length}</strong></div>
+        </div>
+        <ul>
+            <li>Completed learning tasks: ${records.length || 0}</li>
+            <li>Latest performance status: ${average >= 75 ? "High achiever" : average >= 50 ? "Developing well" : "Needs support"}</li>
+            <li>Assignments sent: ${state.assignments.filter(item => String(item.student_id || item.studentId) === String(studentId)).length}</li>
+        </ul>
+    `;
+}
+
+function openAssignmentModal(studentId) {
+    const form = $("#assignmentForm");
+    if (!form) return;
+    form.elements.studentId.value = studentId;
+    const student = state.students.find(item => String(item.id) === String(studentId));
+    if (student) {
+        const title = form.elements.title;
+        if (title) title.value = `${student.name || "Student"} - New Assignment`;
+    }
+    openModal("assignmentModal");
+}
+
+function openInteractionModal(studentId) {
+    const form = $("#studentInteractionForm");
+    if (!form) return;
+    form.elements.studentId.value = studentId;
+    const student = state.students.find(item => String(item.id) === String(studentId));
+    if (student) {
+        form.elements.subject.value = `Query for ${student.name || "student"}`;
+    }
+    openModal("studentInteractionModal");
+}
+
+async function sendStudentEmail(student, title, message) {
+    if (!student || !student.email || !supabaseClient) return false;
+    try {
+        await supabaseClient.functions.invoke("send-student-email", {
+            body: {
+                to: student.email,
+                name: student.name,
+                teacher_name: state.teacher?.name || "Teacher",
+                subject: title,
+                message
+            }
+        });
+        return true;
+    } catch (error) {
+        console.warn("Email function not configured:", error);
+        return false;
+    }
+}
+
+async function submitAssignment(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const studentId = String(formData.get("studentId") || "");
+    const student = state.students.find(item => String(item.id) === String(studentId));
+
+    const record = {
+        student_id: studentId,
+        studentId,
+        teacher_id: state.teacher?.id || null,
+        teacher_name: state.teacher?.name || "Teacher",
+        title: String(formData.get("title") || "").trim(),
+        assignment_type: String(formData.get("type") || "General").trim(),
+        type: String(formData.get("type") || "General").trim(),
+        content: String(formData.get("content") || "").trim(),
+        topic: String(formData.get("content") || "").trim(),
+        notes: String(formData.get("notes") || "").trim(),
+        class_name: state.selectedClass === "All Classes" ? state.teacher?.className || "" : state.selectedClass,
+        created_at: new Date().toISOString(),
+        assigned_at: new Date().toISOString()
+    };
+
+    if (!studentId || !record.title) {
+        showToast("Select a student and enter an assignment title.");
+        return;
+    }
+
+    if (supabaseClient) {
+        const { error } = await supabaseClient.from("student_assignments").insert(record).select().single();
+        if (error) {
+            showToast(`Assignment table not available: ${error.message}. Add it in Supabase first.`);
+            return;
+        }
+
+        const notification = {
+            student_id: studentId,
+            studentId,
+            teacher_id: state.teacher?.id || null,
+            teacher_name: record.teacher_name,
+            title: record.title,
+            message: `New ${record.assignment_type} assigned by ${record.teacher_name}: ${record.content || record.notes}`,
+            body: `New ${record.assignment_type} assigned by ${record.teacher_name}: ${record.content || record.notes}`,
+            created_at: new Date().toISOString(),
+            sent_at: new Date().toISOString(),
+            status: "UNREAD"
+        };
+
+        const notificationResult = await supabaseClient.from("student_notifications").insert(notification);
+        if (notificationResult.error) {
+            console.warn("Notification table not available or insert failed:", notificationResult.error.message);
+        }
+
+        await sendStudentEmail(student, record.title, record.notes || `A new ${record.assignment_type} has been assigned to you. Please check your dashboard and complete it.`);
+
+        await loadPortalData();
+        renderAll();
+        closeModal("assignmentModal");
+        form.reset();
+        showToast("Assignment shared and student notified.");
+        return;
+    }
+
+    state.assignments.unshift(record);
+    state.notifications.unshift({
+        student_id: studentId,
+        title: record.title,
+        message: `New ${record.assignment_type} assigned by ${record.teacher_name}: ${record.content || record.notes}`,
+        created_at: new Date().toISOString()
+    });
+    closeModal("assignmentModal");
+    form.reset();
+    renderAll();
+    showToast("Assignment created in local mode.");
+}
+
+async function submitStudentQuery(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const studentId = String(formData.get("studentId") || "");
+    const student = state.students.find(item => String(item.id) === String(studentId));
+    const subject = String(formData.get("subject") || "Student Query").trim();
+    const message = String(formData.get("message") || "").trim();
+
+    if (!studentId || !message) {
+        showToast("Select a student and write the query message.");
+        return;
+    }
+
+    const payload = {
+        student_id: studentId,
+        studentId,
+        teacher_id: state.teacher?.id || null,
+        teacher_name: state.teacher?.name || "Teacher",
+        subject,
+        message,
+        created_at: new Date().toISOString(),
+        sent_at: new Date().toISOString(),
+        status: "NEW"
+    };
+
+    if (supabaseClient) {
+        const { error } = await supabaseClient.from("student_queries").insert(payload).select().single();
+        if (error) {
+            console.warn("Student queries table missing or unavailable:", error.message);
+        }
+    }
+
+    state.studentQueries.unshift(payload);
+    await sendStudentEmail(student, subject, `Teacher message: ${message}`);
+    closeModal("studentInteractionModal");
+    form.reset();
+    renderAll();
+    showToast("Student query sent and notification shared.");
 }
 
 function initializeChatbot() {
