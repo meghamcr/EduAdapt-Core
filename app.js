@@ -585,16 +585,23 @@ function populateReportClassSelect() {
     const select = $("#reportClassSelect");
     if (!select) return;
     const classes = getClassOptions();
-    const current = state.workClass || state.selectedClass || classes[0];
+    const preferred = state.selectedClass && state.selectedClass !== "All Classes" ? state.selectedClass : state.workClass;
+    const current = classes.find(item => normalizedClass(item) === normalizedClass(preferred) && studentsForClass(item).length)
+        || classes.find(item => studentsForClass(item).length)
+        || classes[0];
     select.innerHTML = classes.map(item => `<option value="${escapeHTML(item)}">${escapeHTML(item)}</option>`).join("");
     select.value = classes.includes(current) ? current : classes[0] || "";
     populateReportStudentSelect(select.value);
 }
 
+function studentsForClass(className) {
+    return state.students.filter(student => normalizedClass(classValue(student)) === normalizedClass(className));
+}
+
 function populateReportStudentSelect(className) {
     const select = $("#reportStudentSelect");
     if (!select) return;
-    const students = state.students.filter(student => normalizedClass(classValue(student)) === normalizedClass(className));
+    const students = studentsForClass(className);
     select.innerHTML = students.length
         ? students.map(student => `<option value="${escapeHTML(String(student.id))}">${escapeHTML(student.name || "Student")}</option>`).join("")
         : `<option value="">No Supabase students found in this division</option>`;
