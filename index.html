@@ -14,6 +14,7 @@
     <!-- Supabase & Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
     <link rel="stylesheet" href="style.css">
 </head>
@@ -164,6 +165,14 @@
             </div>
 
             <div class="sidebar-bottom">
+                <button class="sidebar-action report-sidebar-action" id="openReportPageBtn" type="button">
+                    <i data-lucide="file-bar-chart"></i>
+                    <span>Student Report</span>
+                </button>
+                <button class="sidebar-action report-sidebar-action" id="openGraphAnalysisBtn" type="button">
+                    <i data-lucide="chart-no-axes-combined"></i>
+                    <span>Graph Analysis</span>
+                </button>
                 <div class="class-level">
                     <div class="level-heading">
                         <span>Class XP Level</span>
@@ -235,6 +244,7 @@
                         <div class="stat-card">
                             <div class="stat-icon students-icon"><i data-lucide="users-round"></i></div>
                             <div>
+
                                 <span class="stat-label">TOTAL STUDENTS</span>
                                 <strong class="stat-number" id="activeStudents">0</strong>
                             </div>
@@ -340,6 +350,47 @@
                         </div>
                     </div>
                 </div>
+
+                    <div class="page" id="reportPage">
+                        <div class="page-card report-page-card">
+                            <div class="page-heading-row">
+                                <div>
+                                    <span class="page-eyebrow">LIVE STUDENT ANALYSIS</span>
+                                    <h1>Student Progress Report</h1>
+                                    <p>Choose a class and student to generate an updated study-gap report from Supabase progress.</p>
+                                </div>
+                                <div class="report-export-actions">
+                                    <button class="secondary-btn" id="printStudentReportBtn" type="button"><i data-lucide="printer"></i> Print Report</button>
+                                    <button class="primary-btn" id="downloadStudentReportPdfBtn" type="button"><i data-lucide="file-down"></i> Download PDF</button>
+                                </div>
+                            </div>
+                            <div class="report-selector-grid">
+                                <label>Class Division<select id="reportClassSelect"></select></label>
+                                <label>Student Name<select id="reportStudentSelect"></select></label>
+                                <button class="primary-btn" id="generateReportPageBtn" type="button"><i data-lucide="scan-search"></i> Analyze &amp; Build Report</button>
+                            </div>
+                            <article id="fullStudentReport" class="full-student-report">
+                                <div class="empty-state">Select a class and student to generate the report.</div>
+                            </article>
+                        </div>
+                    </div>
+
+                    <div class="page" id="graphAnalysisPage">
+                        <div class="page-card report-page-card">
+                            <div class="page-heading-row">
+                                <div>
+                                    <span class="page-eyebrow">CLASS PERFORMANCE ANALYSIS</span>
+                                    <h1>Class-Wise Progress Graph</h1>
+                                    <p>Compare average student performance from 6th A and 6th B through 10th A and 10th B.</p>
+                                </div>
+                            </div>
+                            <div class="report-selector-grid single-analysis-filter">
+                                <label>View Division<select id="analysisClassSelect"></select></label>
+                            </div>
+                            <div class="analysis-summary-grid" id="analysisSummaryGrid"></div>
+                            <div class="panel analysis-chart-panel"><div class="chart-container analysis-chart-container"><canvas id="classAnalysisChart"></canvas></div></div>
+                        </div>
+                    </div>
 
                     <div class="page" id="workPortalPage">
                         <div class="page-card">
