@@ -5,14 +5,25 @@ const { fingerprint } = require('../curriculumIngestion/curriculumIdentity');
 const { buildGenerationRequest } = require('./generationRequest');
 const { validateGame, decodeCandidate } = require('./gameValidation');
 const { LIMITS, VERSION } = require('./gameContract');
+const issuedResults = new WeakMap();
+function generationInputIdentity({ context, decision, prerequisite }) {
+  return { context: fingerprint(context), decision: fingerprint(decision), prerequisite: prerequisite ? {
+    context: fingerprint(prerequisite.context), decision: fingerprint(prerequisite.decision)
+  } : null };
+}
+function requireValidatedGeneration(result) {
+  const binding = issuedResults.get(result);
+  if (!binding) throw new Error('ISSUED_VALIDATED_GENERATION_REQUIRED');
+  return binding;
+}
 
 function createGameGenerator(provider, { maxRepairs = 1 } = {}) {
   if (!provider || typeof provider.generateStructuredGame !== 'function' || !Number.isSafeInteger(maxRepairs) || maxRepairs < 0 || maxRepairs > LIMITS.repairCount) throw new Error('GENERATOR_CONFIG_INVALID');
   async function generate(input) {
     const state = { generationAttempts: 0, repairAttempts: 0, validationResults: [] };
     const failure = (code, stage) => freeze({ ok: false, failure: { code, stage }, ...state });
-    let request;
-    try { request = buildGenerationRequest(input); }
+    let request, inputIdentity;
+    try { request = buildGenerationRequest(input); inputIdentity = freeze(generationInputIdentity(input)); }
     catch { return failure('GENERATION_INPUT_INVALID', 'request'); }
     let payload = request;
     for (let attempt = 0; attempt <= maxRepairs; attempt++) {
@@ -26,13 +37,15 @@ function createGameGenerator(provider, { maxRepairs = 1 } = {}) {
       if (result.valid) {
         const game = decodeCandidate(raw);
         const specificationFingerprint = fingerprint(game);
-        return freeze({ ok: true, package: { contractVersion: VERSION, status: 'VALIDATED',
+        const result = freeze({ ok: true, package: { contractVersion: VERSION, status: 'VALIDATED',
           game, academicGrounding: structuredClone(request.academicGrounding),
           requestFingerprint: fingerprint(request), specificationFingerprint,
           // Same request can generate multiple candidates. Bind events to the
           // actual spec checksum as well as its request-family gameId.
           telemetryContext: { ...structuredClone(game.telemetry.binding), specificationFingerprint },
           warnings: ['NODE_OBJECTIVE_APPLICABILITY_NOT_ESTABLISHED', 'SOURCE_RECALL_ONLY_NOT_REASONING_OR_MASTERY_PROOF'] }, ...state });
+        issuedResults.set(result, freeze({ inputIdentity, requestFingerprint: fingerprint(request), specificationFingerprint }));
+        return result;
       }
       if (attempt === maxRepairs) return failure('REPAIR_LIMIT_EXHAUSTED', 'validation');
       let candidate;
@@ -50,4 +63,4 @@ function createGameGenerator(provider, { maxRepairs = 1 } = {}) {
   }
   return Object.freeze({ generate });
 }
-module.exports = { createGameGenerator };
+module.exports = { createGameGenerator, requireValidatedGeneration, generationInputIdentity };

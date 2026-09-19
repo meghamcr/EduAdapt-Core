@@ -1,5 +1,9 @@
 const { requireLearnerState, DIFFICULTIES, fail, freeze, object } = require('./learnerStateProvider');
 const { evaluatePrerequisites } = require('./prerequisitePolicy');
+const issuedDecisions = new WeakSet();
+function requireAdaptiveDecision(decision) {
+  if (!issuedDecisions.has(decision)) fail('ISSUED_ADAPTIVE_DECISION_REQUIRED');
+}
 const POLICY = freeze({ version: 'adaptive-v1', window: 5, minimumSamples: 3, strongAccuracy: 0.85, weakAccuracy: 0.6, maximumStrongAttempts: 2, maximumStrongHints: 1, repeatedSignalCount: 2 });
 function decideAdaptiveLearning(input) {
   object(input, ['context', 'learnerState', 'prerequisites']);
@@ -47,11 +51,13 @@ function decideAdaptiveLearning(input) {
   if (!rows.length) missing.push({ observationId: null, field: 'observations' });
   if (s.mastery.status === 'UNKNOWN') missing.push({ observationId: null, field: 'mastery' });
   if (s.previousDifficulty === null) missing.push({ observationId: null, field: 'previousDifficulty' });
-  return freeze({ decisionVersion: POLICY.version,
+  const decision = freeze({ decisionVersion: POLICY.version,
     academicDecision: { targetNodeId: c.nodeId, mappedNodeId: c.mappedNodeId, artifactVersionId: c.artifactVersionId, mode, dependentWorkAllowed: prerequisiteStatus.dependentWorkAllowed, requiresSeparatelyGroundedPrerequisiteContext: !prerequisiteStatus.dependentWorkAllowed, prerequisiteStatus, reasonCodes: [...reasons] },
     instructionalDecision: { difficulty, scaffoldingLevel: needsSupport ? 'HIGH' : difficulty === 'MEDIUM' ? 'MODERATE' : 'LOW', hintsAllowed: true, guidanceLevel: needsSupport ? 'STEP_BY_STEP' : 'ON_DEMAND', challengeIntensity: difficulty, reinforcementLevel: needsSupport ? 'HIGH' : 'STANDARD' },
     evidence: { learnerId: s.learnerId, confidence: sufficient && (signals.strong >= POLICY.minimumSamples || negative) ? 'SUPPORTED' : 'LIMITED', observationsUsed: structuredClone(rows), observationsMissing: missing, suppliedMastery: structuredClone(s.mastery), signals, reasonCodes: [...reasons], responseTimeUsedForDifficulty: false },
     constraints: { academicScopeLocked: true, difficultyCannotExpandScope: true, allowAcademicInference: false, automaticNodeCombinationAllowed: false, hierarchyImpliesPrerequisites: false }
   });
+  issuedDecisions.add(decision);
+  return decision;
 }
-module.exports = { decideAdaptiveLearning, POLICY };
+module.exports = { decideAdaptiveLearning, requireAdaptiveDecision, POLICY };

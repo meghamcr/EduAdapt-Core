@@ -236,3 +236,13 @@ versioned adapter. No verified Unity runtime exists in the current repository,
 so this phase makes no Unity compatibility claim. An integration must render
 source passages literally and keep decorative assets separate from academic
 diagrams. No frontend, runtime, schema or migration was changed here.
+
+## Phase 3E follow-on
+
+The trusted persistence/reuse domain service is now documented in
+[game-persistence.md](game-persistence.md). Successful results additionally carry
+an in-process issuance binding (not a serialized field). Persistence consumes the
+original context/decision/result handles, revalidates the game, and rebuilds the
+context inside the write transaction. Generation itself still performs no writes.
+Authentication, runtime certification, objective applicability and richer reasoning
+remain unresolved integration/capability boundaries as described there.

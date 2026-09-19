@@ -160,3 +160,9 @@ observation windows and prior policy decisions/consumed evidence. Existing legac
 Topic/Subtopic mastery is not an automatic substitute. No schema change is proposed
 or applied here. Phase 3D must honor prerequisite blocking and curriculum scope and
 must not turn this decision into new academic content or permanent approval.
+
+Phase 3E adds `requireAdaptiveDecision`, which verifies that a decision was issued
+in-process by this engine. It does not normalize or mint decisions, change policy,
+authenticate evidence, or serialize trust. The persistence service requires issued
+decisions and checks their generation binding; reuse identity excludes learner
+identity. See [game-persistence.md](game-persistence.md).

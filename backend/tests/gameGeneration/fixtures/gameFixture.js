@@ -9,8 +9,8 @@ const { decideAdaptiveLearning } = require('../../../src/services/adaptiveLearni
 const { buildGenerationRequest } = require('../../../src/services/gameGeneration/generationRequest');
 const { VERSION, EVENTS } = require('../../../src/services/gameGeneration/gameContract');
 
-async function fixture({ nodeId = 'worked', state = {}, requirements = [] } = {}) {
-  const db = database(), service = createArtifactService(db, { dbNull: null }), source = artifact();
+async function fixture({ nodeId = 'worked', state = {}, requirements = [], db = database() } = {}) {
+  const service = createArtifactService(db, { dbNull: null }), source = artifact();
   const node = source.nodes.find(n => n.id === 'worked'); node.id = nodeId;
   node.materials[0].text = 'A collection contains eight tokens and four counters.';
   node.content = renderMaterials(node.materials); rehash(source);

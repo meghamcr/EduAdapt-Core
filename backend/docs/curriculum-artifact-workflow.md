@@ -205,7 +205,7 @@ is local ignored build output, not a schema or migration change.
 Approved ArtifactVersion + explicit mapped CurriculumNode → Generation Context →
 future Adaptive Decision (3C) → future Game Generation (3D).
 
-`src/services/gameGeneration/generationContext.js` exports only
+`src/services/gameGeneration/generationContext.js` provides
 `createGenerationContextService(db)`. Inject a trusted Prisma-compatible client:
 
 ```js
@@ -266,3 +266,9 @@ Prerequisite policy and node-applicable objective selection remain Phase 3C deci
 `npm run test:generation-context` uses synthetic fixtures/injected transactional mocks;
 `npm test` includes it alongside all existing suites. No Supabase connection or local
 Grade 4/Grade 6 processing is required.
+
+Phase 3E adds a non-issuing `requireGenerationContext` origin guard and
+`buildInTransaction(tx, selection)` on the service so persistence can rebuild this
+same projection inside its Serializable write transaction. Ordinary `build` keeps
+its existing behavior. Both paths reuse the Phase 2C grounding helper without a
+null-ID bypass. See [game-persistence.md](game-persistence.md).

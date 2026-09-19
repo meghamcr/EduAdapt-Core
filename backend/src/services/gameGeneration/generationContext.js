@@ -1,4 +1,8 @@
 const { createArtifactService, ArtifactServiceError } = require('../curriculumArtifacts/artifactService');
+const issuedContexts = new WeakSet();
+function requireGenerationContext(context) {
+  if (!issuedContexts.has(context)) invalid('ISSUED_GENERATION_CONTEXT_REQUIRED');
+}
 
 function invalid(code) { throw new ArtifactServiceError(code); }
 function validateSelection(selection) {
@@ -27,10 +31,9 @@ function detachedFrozen(value) {
 // This is the only public constructor; there is no node-only or raw-JSON bypass.
 function createGenerationContextService(db) {
   const artifacts = createArtifactService(db);
-  async function build(selection) {
+  async function buildInTransaction(tx, selection) {
     validateSelection(selection); // Reject null BEFORE the historical compatibility helper.
     const { curriculumArtifactVersionId: versionId, curriculumNodeId: mappedNodeId } = selection;
-    return db.$transaction(async tx => {
       // Reuse all Phase 2C integrity, approval, import, mapping and drift checks.
       // This performs a parameterized SELECT FOR UPDATE, not a data write.
       const grounded = await artifacts.gameGroundingInTransaction(tx, versionId, mappedNodeId);
@@ -55,7 +58,7 @@ function createGenerationContextService(db) {
         if (!cursor) invalid('GENERATION_HIERARCHY_INVALID');
       }
       hierarchyPath.reverse();
-      return detachedFrozen({
+      const context = detachedFrozen({
         contextVersion: 1,
         curriculum: {
           artifactVersionId: version.id, nodeId, mappedNodeId,
@@ -87,8 +90,15 @@ function createGenerationContextService(db) {
           preserveUnansweredTasks: true
         }
       });
-    }, { isolationLevel: 'Serializable', timeout: 30000 });
+      issuedContexts.add(context);
+      return context;
   }
-  return Object.freeze({ build });
+  async function build(selection) {
+    validateSelection(selection);
+    return db.$transaction(tx => buildInTransaction(tx, selection), { isolationLevel: 'Serializable', timeout: 30000 });
+  }
+  // Persistence supplies its own serializable transaction, sharing the exact
+  // Phase 3B projection and Phase 2C authority checks with ordinary builds.
+  return Object.freeze({ build, buildInTransaction });
 }
-module.exports = { createGenerationContextService };
+module.exports = { createGenerationContextService, requireGenerationContext };
