@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Reports</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <strong>EduAdapt Admin</strong>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="school.html">School</a>
+    <a href="classes.html">Classes</a>
+    <a href="courses-subjects.html">Courses & Subjects</a>
+    <a href="teachers.html">Teachers</a>
+    <a href="students.html">Students</a>
+    <a href="users-rbac.html">Users & Roles</a>
+    <a href="analytics.html">Analytics</a>
+    <a href="broadcasts.html">Broadcasts</a>
+    <a href="audit-logs.html">Audit Logs</a>
+    <a href="reports.html">Reports</a>
+    <button class="logout-btn" onclick="clearToken(); window.location.href='login.html';">Logout</button>
+  </nav>
+
+  <div class="container">
+    <h1>Reports</h1>
+
+    <div class="card">
+      <h3>Board Accreditation Exporter</h3>
+      <p>Download a CSV of every student's learning outcomes (mastery, accuracy, attempts by topic).</p>
+      <button id="exportBtn">Download CSV</button>
+      <div id="exportMessage"></div>
+    </div>
+
+    <div class="card">
+      <h3>Parent Communication Gateway</h3>
+      <p>Run the weekly digest generator now. Digests are generated per student (with a parent email on file) and logged — not actually emailed, since no external email service is connected yet.</p>
+      <button id="digestBtn">Run Weekly Digest</button>
+      <div id="digestMessage"></div>
+      <table id="digestTable" style="display:none;">
+        <thead>
+          <tr><th>Student</th><th>Parent Email</th><th>Topics Covered</th><th>Avg Mastery</th><th>Tip</th></tr>
+        </thead>
+        <tbody id="digestTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    requireLogin();
+
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const msgEl = document.getElementById('exportMessage');
+      msgEl.textContent = '';
+      msgEl.className = '';
+      try {
+        const response = await fetch(`${API_BASE}/export/learning-outcomes`, {
+          headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Export failed');
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'learning_outcomes.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        msgEl.textContent = 'CSV downloaded.';
+        msgEl.className = 'success';
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    });
+
+    document.getElementById('digestBtn').addEventListener('click', async () => {
+      const msgEl = document.getElementById('digestMessage');
+      const table = document.getElementById('digestTable');
+      const tbody = document.getElementById('digestTableBody');
+      msgEl.textContent = '';
+      msgEl.className = '';
+      try {
+        const data = await apiRequest('/parent-digest/run', 'POST');
+        msgEl.textContent = data.message;
+        msgEl.className = 'success';
+        tbody.innerHTML = data.digests.map(d => `
+          <tr>
+            <td>${d.studentName}</td>
+            <td>${d.parentEmail}</td>
+            <td>${d.topicsCovered}</td>
+            <td>${d.averageMastery === null ? '—' : d.averageMastery.toFixed(1) + '%'}</td>
+            <td>${d.tip}</td>
+          </tr>
+        `).join('');
+        table.style.display = 'table';
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    });
+  </script>
+</body>
+</html>
