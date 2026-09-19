@@ -199,3 +199,70 @@ The pre-deployment tests that assumed exactly two migrations now explicitly incl
 the committed third migration and pin its SHA-256; historical hash checks remain.
 No SQL or historical manifest evidence is rewritten. Generated Prisma client output
 is local ignored build output, not a schema or migration change.
+
+## Phase 3B: curriculum-grounded generation context
+
+Approved ArtifactVersion + explicit mapped CurriculumNode → Generation Context →
+future Adaptive Decision (3C) → future Game Generation (3D).
+
+`src/services/gameGeneration/generationContext.js` exports only
+`createGenerationContextService(db)`. Inject a trusted Prisma-compatible client:
+
+```js
+const { createGenerationContextService } = require('./src/services/gameGeneration/generationContext');
+const context = await createGenerationContextService(prisma).build({
+  curriculumArtifactVersionId: explicitVersionId,
+  curriculumNodeId: explicitMaterializedNodeId
+});
+```
+
+Both IDs must be nonblank exact strings. Extra input properties are rejected. There
+is no title lookup, current-version fallback, legacy-null exemption, caller academic
+content, approval bypass, environment loading or automatic client construction.
+
+The builder invokes Phase 2C `gameGroundingInTransaction`, then reads the snapshot
+and import mapping inside the SAME Serializable transaction. It inherits full
+snapshot/projection integrity, APPROVED status, successful import, exact mapping,
+book/chapter scope and complete materialization checks. Any chapter drift fails
+closed; nothing is repaired. The helper's parameterized SELECT FOR UPDATE temporarily
+locks the version to coordinate with reviews; no INSERT/UPDATE/DELETE occurs.
+
+Contract version 1 is detached, deeply frozen and JSON-compatible:
+
+- `contextVersion: 1`.
+- `curriculum`: artifactVersionId, artifact nodeId, mappedNodeId, board, grade,
+  subject, book `{id,title}`, nullable edition, chapter
+  `{id,mappedChapterId,number,title}`, hierarchyPath `{nodeId,title,type,orderIndex}`
+  from root to selected node.
+- `curriculum.objectiveScope: "CHAPTER"`; learningObjectives
+  `{index,text,sourceRefs:[{sourceId,page}]}` preserve chapter wording and evidence.
+  Reference objectives by artifact version plus zero-based index. No selected-node
+  applicability is inferred. Missing/invalid authority-v2 evidence fails closed.
+- `curriculum.authoritativeContent`: selected node's explicit-only projection.
+  `materials` retain explicit authority, evidenceKind, role, text, sourceRefs,
+  studentCompletion and visualDependency status, preserving unanswered tasks/blanks.
+- `grounding`: reviewStatus="APPROVED", imported=true, artifactChecksum,
+  sourceFingerprint, contentFingerprint, sourceRegistry `{sourceId,sha256,pages}`.
+  Unknown fingerprints remain null, never fabricated.
+- `constraints`: academicScopeLocked=true, allowAcademicInference=false,
+  contentScope="SELECTED_NODE_ONLY", hierarchyIsNavigationOnly=true,
+  chapterObjectivesImplyNodeApplicability=false, allowPrerequisiteInference=false,
+  preserveUnansweredTasks=true.
+
+Ancestors/descendants add no academic content. Titles/types/path are navigation,
+not prerequisite relationships or new facts. Synthesis, both inference categories,
+model visual descriptions and raw snapshots are excluded. Evidence/registry fields
+are explicitly selected rather than copying arbitrary extra JSON. Visual dependency
+flags remain limitations, not reconstructed visuals. There are no learner, difficulty,
+game mechanic, visual-design, Unity or timestamp fields. Unchanged approved selection
+and state yield equivalent context. This phase neither generates games nor selects
+difficulty.
+
+This is a verified snapshot, not permanent authorization. Approval can change after
+return; future GameSpec persistence must recheck Phase 2C grounding in its own
+transaction. Do not hold a database transaction open during a future provider call.
+Prerequisite policy and node-applicable objective selection remain Phase 3C decisions.
+
+`npm run test:generation-context` uses synthetic fixtures/injected transactional mocks;
+`npm test` includes it alongside all existing suites. No Supabase connection or local
+Grade 4/Grade 6 processing is required.

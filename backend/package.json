@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/curriculumIngestion/*.test.js tests/prisma/*.test.js tests/curriculumArtifacts/*.test.js",
+    "test": "node --test tests/curriculumIngestion/*.test.js tests/prisma/*.test.js tests/curriculumArtifacts/*.test.js tests/gameGeneration/*.test.js",
     "test:curriculum": "node --test tests/curriculumIngestion/*.test.js",
     "ingest:curriculum": "node src/services/curriculumIngestion/ingestCurriculum.js",
     "test:prisma": "node --test tests/prisma/*.test.js",
-    "test:artifacts": "node --test tests/curriculumArtifacts/*.test.js"
+    "test:artifacts": "node --test tests/curriculumArtifacts/*.test.js",
+    "test:generation-context": "node --test tests/gameGeneration/generationContext.test.js"
   },
   "keywords": [],
   "author": "",
