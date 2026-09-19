@@ -21,6 +21,7 @@ const state = {
     workClass: "6th A",
     calendarDate: new Date(),
     chart: null,
+    analysisChart: null,
     localMode: false
 };
 
@@ -104,6 +105,17 @@ function bindStaticControls() {
         $$(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.page === "workPortal"));
         showPage("workPortal");
     });
+    $("#openReportPageBtn")?.addEventListener("click", () => openAnalysisPage("report"));
+    $("#openGraphAnalysisBtn")?.addEventListener("click", () => openAnalysisPage("graphAnalysis"));
+    $("#reportClassSelect")?.addEventListener("change", event => {
+        populateReportStudentSelect(event.target.value);
+        resetReportOutput("Select a student, then click Analyze & Build Report.");
+    });
+    $("#reportStudentSelect")?.addEventListener("change", () => resetReportOutput("Click Analyze & Build Report to create the evidence-based report."));
+    $("#generateReportPageBtn")?.addEventListener("click", renderStudentReportPage);
+    $("#printStudentReportBtn")?.addEventListener("click", () => window.print());
+    $("#downloadStudentReportPdfBtn")?.addEventListener("click", downloadStudentReportPdf);
+    $("#analysisClassSelect")?.addEventListener("change", renderClassAnalysis);
 
     $$(".modal-close").forEach(button => button.addEventListener("click", () => closeModal(button.dataset.close)));
     window.addEventListener("click", event => {
@@ -146,7 +158,7 @@ function getClassOptions() {
         ...state.students.map(classValue),
         state.teacher?.className,
         state.workClass
-    ].filter(Boolean))];
+    ].filter(Boolean).map(formatClassName))];
 
     return names.sort((left, right) => {
         const order = { "6th": 1, "7th": 2, "8th": 3, "9th": 4, "10th": 5 };
@@ -158,6 +170,12 @@ function getClassOptions() {
         const rightGrade = String(right).replace(/\s.*$/, "");
         return (order[leftGrade] || 99) - (order[rightGrade] || 99) || (leftNumber - rightNumber) || (leftSection - rightSection);
     });
+}
+
+function formatClassName(value) {
+    const text = String(value || "").trim().replace(/\s+/g, " ");
+    const match = text.match(/^(6|7|8|9|10)(?:th|st|nd|rd)?\s*([AB])$/i);
+    return match ? `${match[1]}th ${match[2].toUpperCase()}` : text;
 }
 
 function renderWorkClassFilters() {
@@ -544,6 +562,193 @@ async function loadPortalData() {
     queries.forEach(result => { if (result.error) console.warn(result.error.message); });
 }
 
+function openAnalysisPage(page) {
+    $$(".nav-item").forEach(item => item.classList.remove("active"));
+    showPage(page);
+    if (page === "report") {
+        populateReportClassSelect();
+        resetReportOutput("Select a student, then click Analyze & Build Report.");
+    }
+    if (page === "graphAnalysis") renderClassAnalysis();
+}
+
+function progressForStudent(studentId) {
+    return state.progress.filter(item => String(item.student_id || item.studentId) === String(studentId));
+}
+
+function scoreForProgress(item) {
+    const rawScore = Number(item.score ?? item.masteryScore ?? item.accuracy * 100);
+    return Number.isFinite(rawScore) ? Math.round(rawScore <= 1 ? rawScore * 100 : rawScore) : null;
+}
+
+function populateReportClassSelect() {
+    const select = $("#reportClassSelect");
+    if (!select) return;
+    const classes = getClassOptions();
+    const current = state.workClass || state.selectedClass || classes[0];
+    select.innerHTML = classes.map(item => `<option value="${escapeHTML(item)}">${escapeHTML(item)}</option>`).join("");
+    select.value = classes.includes(current) ? current : classes[0] || "";
+    populateReportStudentSelect(select.value);
+}
+
+function populateReportStudentSelect(className) {
+    const select = $("#reportStudentSelect");
+    if (!select) return;
+    const students = state.students.filter(student => normalizedClass(classValue(student)) === normalizedClass(className));
+    select.innerHTML = students.length
+        ? students.map(student => `<option value="${escapeHTML(String(student.id))}">${escapeHTML(student.name || "Student")}</option>`).join("")
+        : `<option value="">No Supabase students found in this division</option>`;
+}
+
+function resetReportOutput(message) {
+    const output = $("#fullStudentReport");
+    if (output) {
+        output.dataset.reportReady = "false";
+        output.innerHTML = `<div class="empty-state">${escapeHTML(message)}</div>`;
+    }
+}
+
+function buildStudentAnalysis(student, className) {
+    const records = progressForStudent(student.id);
+    const scores = records.map(scoreForProgress).filter(score => score !== null);
+    const average = scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : null;
+    const attendance = state.attendance.filter(item => String(item.studentId || item.student_id) === String(student.id));
+    const attendanceRate = attendance.length ? Math.round(attendance.filter(item => String(item.status).toUpperCase() !== "ABSENT").length / attendance.length * 100) : null;
+    const work = state.studentWork.filter(item => String(item.studentId || item.student_id) === String(student.id));
+    const assignments = state.assignments.filter(item => String(item.studentId || item.student_id) === String(student.id));
+    const recentScores = scores.slice(-5);
+    const trend = recentScores.length > 1 ? recentScores[recentScores.length - 1] - recentScores[0] : null;
+    const studyGap = average === null ? "No scored progress record is available yet." : average < 50 ? "Foundational concepts and regular practice need attention." : average < 75 ? "Some concepts are developing but consistency is still needed." : "No major study gap is visible in the recorded scores.";
+    const learningGap = records.length === 0 ? "Learning gap cannot be measured until the student completes a recorded game or assessment." : trend !== null && trend < 0 ? "Recent recorded performance is lower than the earlier records." : "Continue the current learning path and monitor the next assessment.";
+    const recommendation = average === null ? "Ask the student to complete the next assigned game or assessment so the next analysis has evidence." : average < 50 ? "Use easier adaptive games, revise one concept at a time, and complete short daily practice." : average < 75 ? "Review missed concepts, complete the pending work, and attempt a medium-difficulty game." : "Attempt advanced games, explain solutions, and reinforce concepts through project work.";
+    return { className, records, scores, average, attendanceRate, work, assignments, trend, studyGap, learningGap, recommendation, status: average === null ? "Awaiting data" : average >= 75 ? "Strong progress" : average >= 50 ? "Developing" : "Needs support" };
+}
+
+function renderStudentReportPage() {
+    const output = $("#fullStudentReport");
+    const classSelect = $("#reportClassSelect");
+    const studentSelect = $("#reportStudentSelect");
+    if (!output || !classSelect || !studentSelect) return;
+    if (!supabaseClient) {
+        output.innerHTML = `<div class="empty-state">Supabase connection is required for live student reports. No dummy report was generated.</div>`;
+        return;
+    }
+    const className = classSelect.value;
+    const student = state.students.find(item => String(item.id) === String(studentSelect.value));
+    if (!student) {
+        output.innerHTML = `<div class="empty-state">No student data returned from Supabase for ${escapeHTML(className)}.</div>`;
+        return;
+    }
+    const analysis = buildStudentAnalysis(student, className);
+    const { records, average, attendanceRate, work, assignments, studyGap, learningGap, recommendation, status } = analysis;
+
+    output.innerHTML = `
+        <h2>${escapeHTML(student.name || "Student")}</h2>
+        <p class="report-meta">Analysis complete from Supabase records · Class: ${escapeHTML(className)} · Student ID: ${escapeHTML(student.id)}</p>
+        <div class="student-report-summary">
+            <div><span>Average performance</span><strong>${average === null ? "N/A" : `${average}%`}</strong></div>
+            <div><span>Attendance</span><strong>${attendanceRate === null ? "N/A" : `${attendanceRate}%`}</strong></div>
+            <div><span>Progress records</span><strong>${records.length}</strong></div>
+        </div>
+        <h3>Teacher Report</h3>
+        <p><strong>Current status:</strong> ${status}</p>
+        <p><strong>Study gap:</strong> ${studyGap}</p>
+        <p><strong>Learning gap:</strong> ${learningGap}</p>
+        <p><strong>Work and engagement:</strong> ${work.length} submitted work item${work.length === 1 ? "" : "s"}, ${assignments.length} assignment${assignments.length === 1 ? "" : "s"}, and ${records.length} recorded progress item${records.length === 1 ? "" : "s"}.</p>
+        <h3>Evidence-Based Teacher Recommendation</h3>
+        <p>${recommendation}</p>
+        <h3>Next Actions</h3>
+        <ul>
+            <li>Complete the next assigned activity and review the concepts marked as difficult.</li>
+            <li>Teacher should compare the next score with this report before changing the learning level.</li>
+            <li>Keep submitting work so the report reflects current performance rather than old records.</li>
+        </ul>
+    `;
+    output.dataset.reportReady = "true";
+}
+
+function downloadStudentReportPdf() {
+    const output = $("#fullStudentReport");
+    const studentSelect = $("#reportStudentSelect");
+    const student = state.students.find(item => String(item.id) === String(studentSelect?.value));
+    if (!output || output.dataset.reportReady !== "true" || !student) {
+        showToast("Analyze a real Supabase student before downloading the PDF.");
+        return;
+    }
+    const pdfApi = window.jspdf;
+    if (!pdfApi?.jsPDF) {
+        showToast("PDF library could not be loaded. Use Print Report and choose Save as PDF.");
+        return;
+    }
+    const className = $("#reportClassSelect")?.value || "Class";
+    const doc = new pdfApi.jsPDF({ unit: "mm", format: "a4" });
+    const margin = 16;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 18;
+    doc.setTextColor(0, 107, 89);
+    doc.setFontSize(10);
+    doc.text("EDUADAPT / LIVE STUDENT ANALYSIS", margin, y);
+    y += 9;
+    doc.setTextColor(30, 43, 63);
+    doc.setFontSize(20);
+    doc.text("Student Progress Report", margin, y);
+    y += 9;
+    doc.setFontSize(11);
+    doc.text(`${student.name || "Student"} | ${className}`, margin, y);
+    y += 8;
+    doc.setDrawColor(210, 220, 230);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+    doc.setFontSize(10);
+    const lines = doc.splitTextToSize(output.innerText.trim(), pageWidth - margin * 2);
+    lines.forEach(line => {
+        if (y > 278) {
+            doc.addPage();
+            y = 18;
+        }
+        doc.text(line, margin, y);
+        y += 5.5;
+    });
+    const safeName = String(student.name || "student").replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").toLowerCase() || "student";
+    doc.save(`${safeName}-progress-report.pdf`);
+    showToast("Student progress report PDF downloaded.");
+}
+
+function classPerformance(className) {
+    const students = state.students.filter(student => normalizedClass(classValue(student)) === normalizedClass(className));
+    const scores = students.flatMap(student => progressForStudent(student.id).map(scoreForProgress)).filter(score => score !== null);
+    return { students, scores, average: scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : null };
+}
+
+function renderClassAnalysis() {
+    const classSelect = $("#analysisClassSelect");
+    const summary = $("#analysisSummaryGrid");
+    const canvas = $("#classAnalysisChart");
+    if (!classSelect || !summary || !canvas) return;
+    if (!supabaseClient) {
+        summary.innerHTML = `<div class="empty-state">Supabase connection is required for live graph analysis. No dummy values were added.</div>`;
+        return;
+    }
+    const classes = getClassOptions();
+    classSelect.innerHTML = classes.map(item => `<option value="${escapeHTML(item)}">${escapeHTML(item)}</option>`).join("");
+    classSelect.value = state.workClass && classes.includes(state.workClass) ? state.workClass : classes[0] || "";
+    const selected = classPerformance(classSelect.value);
+    summary.innerHTML = `
+        <div class="analysis-summary-card"><span>Selected division</span><strong>${escapeHTML(classSelect.value || "N/A")}</strong></div>
+        <div class="analysis-summary-card"><span>Students with Supabase records</span><strong>${selected.students.length}</strong></div>
+        <div class="analysis-summary-card"><span>Scored progress records</span><strong>${selected.scores.length}</strong></div>
+        <div class="analysis-summary-card"><span>Average performance</span><strong>${selected.average === null ? "N/A" : `${selected.average}%`}</strong></div>
+    `;
+    if (!window.Chart) return;
+    if (state.analysisChart) state.analysisChart.destroy();
+    const averages = classes.map(item => classPerformance(item).average);
+    state.analysisChart = new Chart(canvas, {
+        type: "bar",
+        data: { labels: classes, datasets: [{ label: "Average recorded performance (%)", data: averages, backgroundColor: "#20c69d", borderColor: "#008f73", borderWidth: 1 }] },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { tooltip: { callbacks: { label: context => context.raw === null ? "No Supabase progress data" : `${context.raw}%` } } } }
+    });
+}
+
 function renderAll() {
     updateClassSelector();
     renderWorkClassFilters();
@@ -565,6 +770,9 @@ function renderAll() {
     renderAssessments();
     renderAttendance();
     renderWorkPortal();
+    populateReportClassSelect();
+    renderStudentReportPage();
+    renderClassAnalysis();
     renderXPChart();
 }
 
@@ -583,17 +791,13 @@ function classValue(record) {
 }
 
 function normalizedClass(value) {
-    return String(value || "").replace(/\s+/g, "").toLowerCase();
+    return formatClassName(value).replace(/\s+/g, "").toLowerCase();
 }
 
 function updateClassSelector() {
     const selector = $("#classSelector");
     if (!selector) return;
-    const names = [...new Set([
-        ...state.classes.map(record => record.name || record.class_name || record.class_section),
-        ...state.students.map(classValue),
-        state.teacher?.className
-    ].filter(Boolean))].sort();
+    const names = getClassOptions();
     selector.innerHTML = `<option value="All Classes">All Classes</option>${names.map(name => `<option value="${escapeHTML(name)}">${escapeHTML(name)}</option>`).join("")}`;
     selector.value = names.includes(state.selectedClass) ? state.selectedClass : "All Classes";
 }
