@@ -117,6 +117,8 @@ button { cursor: pointer; border: none; }
 .level-bar { height: 6px; background: #005043; border-radius: 10px; overflow: hidden; }
 .level-bar div { height: 100%; background: #20c69d; }
 .sidebar-action { width: 100%; padding: 10px; background: #004b40; border-radius: 8px; color: #9bd8c7; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.report-sidebar-action { background: #075b4e; }
+.report-sidebar-action:hover { background: #008f73; color: #fff; }
 
 /* MAIN TOPBAR */
 .main { margin-left: 280px; width: calc(100% - 280px); min-height: 100vh; }
@@ -261,6 +263,24 @@ button { cursor: pointer; border: none; }
 .student-report-summary span { color: var(--muted); display: block; font-size: 11px; margin-bottom: 8px; }
 .student-report-summary strong { font-size: 22px; }
 .student-report-box ul { padding-left: 18px; color: var(--text); display: grid; gap: 8px; font-size: 13px; }
+.report-page-card { min-height: 520px; }
+.report-export-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.report-selector-grid { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: 14px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.report-selector-grid label { display: grid; gap: 7px; font-size: 12px; font-weight: 800; color: var(--text); }
+.report-selector-grid select { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 9px; background: var(--card); color: var(--text); }
+.full-student-report { margin-top: 20px; padding: 22px; border: 1px solid var(--border); border-radius: 14px; background: var(--card); }
+.full-student-report h2 { font-size: 20px; margin-bottom: 5px; }
+.full-student-report h3 { font-size: 14px; margin: 20px 0 8px; color: var(--green-800); }
+.full-student-report p, .full-student-report li { font-size: 13px; line-height: 1.6; }
+.full-student-report ul { padding-left: 20px; display: grid; gap: 6px; }
+.report-meta { color: var(--muted); font-size: 12px; }
+.analysis-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+.analysis-summary-card { padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.analysis-summary-card span { display: block; color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+.analysis-summary-card strong { font-size: 23px; }
+.analysis-chart-panel { margin-top: 16px; }
+.analysis-chart-container { height: 360px; }
+.single-analysis-filter { grid-template-columns: minmax(220px, 360px); }
 .student-section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
 .assignment-item, .notification-item, .query-item { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: grid; gap: 6px; margin-bottom: 10px; }
 .assignment-item span, .notification-item p, .assignment-item small, .notification-item small, .query-item p, .query-item small { color: var(--muted); font-size: 12px; }
@@ -343,6 +363,8 @@ button { cursor: pointer; border: none; }
 @media (max-width: 600px) {
     .attendance-actions { justify-content: flex-start; }
     .attendance-actions .primary-btn { width: 100%; }
-    .student-analysis-grid, .student-report-summary, .student-section-grid { grid-template-columns: 1fr; }
+    .student-analysis-grid, .student-report-summary, .student-section-grid, .analysis-summary-grid { grid-template-columns: 1fr; }
+    .report-selector-grid { grid-template-columns: 1fr; }
+    .report-export-actions { justify-content: flex-start; }
     .student-actions-row { flex-direction: column; }
 }
