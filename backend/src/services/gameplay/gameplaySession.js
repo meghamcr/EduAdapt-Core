@@ -7,6 +7,7 @@ const { createGenerationContextService } = require('../gameGeneration/generation
 const { GameplayError, fail, fields, id, parseEvent } = require('./gameplayEvents');
 const { initialState, applyEvent } = require('./gameplayState');
 const { replaySession, observationsFor, deriveMastery, MASTERY_POLICY } = require('./learningEvidence');
+const { RUNTIME_VERSION, requireRuntimeVersion, projectRuntime, progress } = require('./runtimeProjection');
 const CONTRACT = 'trusted-gameplay-v1';
 const scopeIdentity = (learnerId, artifactVersionId, nodeId) => fingerprint({ learnerId, artifactVersionId, nodeId });
 function requirePlayableSequence(game) {
@@ -14,7 +15,7 @@ function requirePlayableSequence(game) {
   if (positions.some((p, i) => p < 0 || i > 0 && p < positions[i - 1])) fail('UNSUPPORTED_GAME_SEQUENCE');
 }
 
-function createGameplayService(db, { now = () => new Date(), authorizeExecution } = {}) {
+function createGameplayService(db, { now = () => new Date(), authorizeExecution, expectedEvidenceRevision } = {}) {
   const games = createGamePersistenceService(db);
   const contexts = createGenerationContextService(db);
   async function transaction(fn) {
@@ -29,14 +30,14 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution 
   }
   const lockScope = (tx, scopeId) => tx.$queryRaw`SELECT "id" FROM "CurriculumNodeMastery" WHERE "id" = ${scopeId} FOR UPDATE`;
   const lockLearner = (tx, learnerId) => tx.$queryRaw`SELECT "id" FROM "User" WHERE "id" = ${learnerId} FOR UPDATE`;
-  async function checkedGame(tx, session) {
+  async function checkedGame(tx, session, packageResult = false) {
     const stored = await games.loadValidatedGameInTransaction(tx, session.gameSpecId), p = stored.storedPackage;
     requirePlayableSequence(p.game);
     if (session.contractVersion !== CONTRACT || session.specificationChecksum !== p.specificationFingerprint ||
         session.artifactVersionId !== p.game.grounding.artifactVersionId || session.nodeId !== p.game.grounding.mappedNodeId ||
         session.difficulty !== p.game.instructionalPolicy.difficulty || session.adaptiveMode !== p.game.academicMode ||
         session.scopeId !== scopeIdentity(session.learnerId, session.artifactVersionId, session.nodeId)) fail('SESSION_GAME_MISMATCH');
-    return p.game;
+    return packageResult ? p : p.game;
   }
   async function evidence(tx, scope, expectedSequence = scope.nextSequence) {
     const sessions = await tx.gameplayEvidenceSession.findMany({ where: { scopeId: scope.id }, take: 1001 });
@@ -54,8 +55,15 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution 
     if (collected.length !== expectedSequence || collected.some((e,i) => e.scopeSequence !== i + 1)) fail('EVIDENCE_ORDER_DRIFT');
     return observations.sort((a,b) => a.provenance.scopeSequence - b.provenance.scopeSequence);
   }
-  async function openSession(raw) {
-    fields(raw, ['learnerId', 'gameSpecId', 'creationKey']);
+  async function authorize(learnerId, gameSpecId, specificationChecksum) {
+    if (typeof authorizeExecution !== 'function') fail('RUNTIME_AUTHORIZATION_REQUIRED');
+    const authorization = await authorizeExecution(Object.freeze({ learnerId, gameSpecId, specificationChecksum }));
+    if (!authorization || typeof authorization.reference !== 'string' || !authorization.reference.trim() || authorization.reference.length > 160) fail('RUNTIME_AUTHORIZATION_REQUIRED');
+    return authorization;
+  }
+  async function openSession(raw, runtime = false) {
+    fields(raw, ['learnerId', 'gameSpecId', 'creationKey', ...(runtime ? ['runtimeVersion'] : [])]);
+    if (runtime) requireRuntimeVersion(raw.runtimeVersion);
     const input = { learnerId: id(raw.learnerId), gameSpecId: id(raw.gameSpecId), creationKey: id(raw.creationKey) };
     if (typeof authorizeExecution !== 'function') fail('RUNTIME_AUTHORIZATION_REQUIRED');
     return transaction(async tx => {
@@ -64,8 +72,7 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution 
       requirePlayableSequence(p.game);
       // Trusted injected server policy must certify the EXACT checksum and actor.
       // The pending-runtime DB status is never treated as execution permission.
-      const authorization = await authorizeExecution(Object.freeze({ learnerId: input.learnerId, gameSpecId: input.gameSpecId, specificationChecksum: p.specificationFingerprint }));
-      if (!authorization || typeof authorization.reference !== 'string' || !authorization.reference.trim() || authorization.reference.length > 160) fail('RUNTIME_AUTHORIZATION_REQUIRED');
+      const authorization = await authorize(input.learnerId, input.gameSpecId, p.specificationFingerprint);
       const scopeId = scopeIdentity(input.learnerId, p.game.grounding.artifactVersionId, p.game.grounding.mappedNodeId);
       let scope = await tx.curriculumNodeMastery.findUnique({ where: { id: scopeId } });
       if (!scope) scope = await tx.curriculumNodeMastery.create({ data: { id: scopeId, learnerId: input.learnerId, artifactVersionId: p.game.grounding.artifactVersionId, nodeId: p.game.grounding.mappedNodeId, nextSequence: 0, status: 'UNKNOWN', sampleSize: 0, policyVersion: MASTERY_POLICY } });
@@ -74,18 +81,24 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution 
       const existing = await tx.gameplayEvidenceSession.findMany({ where: { learnerId: input.learnerId, creationKey: input.creationKey } });
       if (existing.length) {
         if (existing.length !== 1 || existing[0].gameSpecId !== input.gameSpecId || existing[0].specificationChecksum !== p.specificationFingerprint) fail('SESSION_KEY_CONFLICT');
-        return freeze({ sessionId: existing[0].id, status: existing[0].status });
+        const session = existing[0];
+        await checkedGame(tx, session);
+        const events = await tx.gameplayEvidenceEvent.findMany({ where: { sessionId: session.id }, orderBy: { sequence: 'asc' } });
+        const state = replaySession(session, p.game, events);
+        return runtime ? projectRuntime(p, session, state) : freeze({ sessionId: session.id, status: state.status });
       }
+      if (expectedEvidenceRevision && (scope.nextSequence !== expectedEvidenceRevision.sequence || scope.artifactVersionId !== expectedEvidenceRevision.artifactVersionId || scope.nodeId !== expectedEvidenceRevision.nodeId)) fail('LEARNER_STATE_CHANGED');
       const session = await tx.gameplayEvidenceSession.create({ data: { id: randomUUID(), ...input, scopeId,
         artifactVersionId: p.game.grounding.artifactVersionId, nodeId: p.game.grounding.mappedNodeId,
         specificationChecksum: p.specificationFingerprint, contractVersion: CONTRACT, difficulty: p.game.instructionalPolicy.difficulty,
         adaptiveMode: p.game.academicMode, runtimeAuthorizationReference: authorization.reference,
         status: 'CREATED', state: initialState(), createdAt: now() } });
-      return freeze({ sessionId: session.id, status: session.status });
+      return runtime ? projectRuntime(p, session, session.state) : freeze({ sessionId: session.id, status: session.status });
     });
   }
-  async function ingestEvent(raw) {
-    fields(raw, ['learnerId', 'sessionId', 'event']);
+  async function ingestEvent(raw, runtime = false) {
+    fields(raw, ['learnerId', 'sessionId', 'event', ...(runtime ? ['runtimeVersion'] : [])]);
+    if (runtime) requireRuntimeVersion(raw.runtimeVersion);
     const learnerId = id(raw.learnerId), sessionId = id(raw.sessionId), event = parseEvent(raw.event);
     return transaction(async tx => {
       await lockLearner(tx, learnerId);
@@ -95,6 +108,7 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution 
       const scope = await tx.curriculumNodeMastery.findUnique({ where: { id: session.scopeId } });
       if (!scope || scope.learnerId !== learnerId || scope.nodeId !== session.nodeId || scope.artifactVersionId !== session.artifactVersionId) fail('EVIDENCE_SCOPE_MISMATCH');
       const game = await checkedGame(tx, session);
+      await authorize(learnerId, session.gameSpecId, session.specificationChecksum);
       const priorMastery = deriveMastery(await evidence(tx, scope));
       if (scope.status !== priorMastery.status || scope.sampleSize !== priorMastery.sampleSize || scope.policyVersion !== priorMastery.policyVersion) fail('MASTERY_PROJECTION_DRIFT');
       const events = await tx.gameplayEvidenceEvent.findMany({ where: { sessionId }, orderBy: { sequence: 'asc' } });
@@ -102,7 +116,7 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution 
       const previous = events.find(e => e.eventKey === event.eventId);
       if (previous) {
         if (previous.payloadFingerprint !== fingerprint(event)) fail('EVENT_KEY_CONFLICT');
-        return receipt(previous);
+        return runtime ? runtimeReceipt(previous, sessionId, before, game) : receipt(previous);
       }
       const observedAt = now(), outcome = applyEvent(game, before, event, observedAt.getTime());
       const sequence = scope.nextSequence + 1;
@@ -115,10 +129,24 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution 
       await tx.gameplayEvidenceSession.update({ where: { id: sessionId }, data: { state: outcome.state, status: outcome.state.status } });
       const observations = await evidence(tx, scope, sequence), mastery = deriveMastery(observations);
       await tx.curriculumNodeMastery.update({ where: { id: scope.id }, data: { nextSequence: sequence, ...mastery } });
-      return receipt(row);
+      return runtime ? runtimeReceipt(row, sessionId, outcome.state, game) : receipt(row);
     });
   }
-  async function loadLearnerState(raw) {
+  async function restoreRuntimeSession(raw) {
+    fields(raw, ['learnerId', 'sessionId', 'runtimeVersion']); requireRuntimeVersion(raw.runtimeVersion);
+    const learnerId = id(raw.learnerId), sessionId = id(raw.sessionId);
+    return transaction(async tx => {
+      await lockLearner(tx, learnerId);
+      const session = await tx.gameplayEvidenceSession.findUnique({ where: { id: sessionId } });
+      if (!session || session.learnerId !== learnerId) fail('SESSION_NOT_FOUND');
+      await lockScope(tx, session.scopeId);
+      const p = await checkedGame(tx, session, true);
+      await authorize(learnerId, session.gameSpecId, session.specificationChecksum);
+      const events = await tx.gameplayEvidenceEvent.findMany({ where: { sessionId }, orderBy: { sequence: 'asc' } });
+      return projectRuntime(p, session, replaySession(session, p.game, events));
+    });
+  }
+  async function loadLearnerState(raw, snapshot = false) {
     fields(raw, ['learnerId', 'artifactVersionId', 'nodeId']);
     const learnerId = id(raw.learnerId), artifactVersionId = id(raw.artifactVersionId), nodeId = id(raw.nodeId);
     return transaction(async tx => {
@@ -127,17 +155,25 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution 
       const sourceNodeId = context.curriculum.nodeId;
       const scopeId = scopeIdentity(learnerId, artifactVersionId, nodeId); await lockScope(tx, scopeId);
       const scope = await tx.curriculumNodeMastery.findUnique({ where: { id: scopeId } });
-      if (!scope) return normalizeLearnerState({ learnerId, artifactVersionId, nodeId: sourceNodeId, observations: [] });
+      const finish = learnerState => snapshot ? freeze({ learnerState, revision: { sequence: scope?.nextSequence || 0, artifactVersionId, nodeId } }) : learnerState;
+      if (!scope) return finish(normalizeLearnerState({ learnerId, artifactVersionId, nodeId: sourceNodeId, observations: [] }));
       if (scope.id !== scopeIdentity(scope.learnerId, scope.artifactVersionId, scope.nodeId)) fail('EVIDENCE_SCOPE_MISMATCH');
       const observations = await evidence(tx, scope), mastery = deriveMastery(observations);
       if (scope.status !== mastery.status || scope.sampleSize !== mastery.sampleSize || scope.policyVersion !== mastery.policyVersion) fail('MASTERY_PROJECTION_DRIFT');
       const latest = observations.slice(-5);
-      return normalizeLearnerState({ learnerId, artifactVersionId, nodeId: sourceNodeId, previousDifficulty: latest.at(-1)?.provenance.difficulty || null,
+      return finish(normalizeLearnerState({ learnerId, artifactVersionId, nodeId: sourceNodeId, previousDifficulty: latest.at(-1)?.provenance.difficulty || null,
         mastery: { status: mastery.status, sampleSize: mastery.sampleSize || null },
-        observations: latest.map(({ provenance, ...observation }) => observation) });
+        observations: latest.map(({ provenance, ...observation }) => observation) }));
     });
   }
-  return Object.freeze({ openSession, ingestEvent, loadLearnerState });
+  return Object.freeze({ openSession: raw => openSession(raw), ingestEvent: raw => ingestEvent(raw), loadLearnerState: raw => loadLearnerState(raw),
+    loadLearningSnapshot: raw => loadLearnerState(raw, true),
+    openRuntimeSession: raw => openSession(raw, true), ingestRuntimeEvent: raw => ingestEvent(raw, true), restoreRuntimeSession });
+}
+function runtimeReceipt(row, sessionId, state, game) {
+  return freeze({ runtimeVersion: RUNTIME_VERSION, sessionId, ...receipt(row),
+    feedback: row.correctness === null ? null : row.correctness ? 'Your answer matches the source text.' : 'Compare your answer with the source text.',
+    progress: progress(state, game) });
 }
 function receipt(row) {
   return freeze({ eventId: row.eventKey, sequence: row.sequence, attempt: row.attempt, correctness: row.correctness, derivedTypes: structuredClone(row.derivedTypes) });

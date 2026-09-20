@@ -1,0 +1,83 @@
+{
+  "runtimeVersion": "eduadapt-runtime-v1",
+  "gameId": "runtime_example",
+  "sessionId": "example-session",
+  "title": "Source Quest",
+  "difficulty": "EASY",
+  "adaptiveMode": "PRIMARY",
+  "fiction": {
+    "setting": "In a make-believe cloud garden",
+    "character": "a friendly dragon",
+    "narrative": "collects pretend stars with you.",
+    "dialogue": "Let us try together!"
+  },
+  "instructionalPolicy": {
+    "scaffoldingLevel": "HIGH",
+    "hintsAllowed": true,
+    "guidanceLevel": "STEP_BY_STEP",
+    "challengeIntensity": "EASY",
+    "reinforcementLevel": "HIGH"
+  },
+  "phases": [
+    {
+      "id": "intro",
+      "type": "INTRO",
+      "instruction": "Welcome to the source quest.",
+      "teaching": []
+    },
+    {
+      "id": "teach",
+      "type": "TEACH",
+      "instruction": "Read the source passage.",
+      "teaching": [
+        "A collection contains eight tokens and four counters."
+      ]
+    },
+    {
+      "id": "practice",
+      "type": "GUIDED_PRACTICE",
+      "instruction": "Read the passage, find the missing text, then check your answer.",
+      "teaching": []
+    },
+    {
+      "id": "complete",
+      "type": "COMPLETE",
+      "instruction": "You completed the quest!",
+      "teaching": []
+    }
+  ],
+  "challenges": [
+    {
+      "id": "challenge1",
+      "type": "MCQ_CLOZE",
+      "phaseId": "practice",
+      "instruction": "Restore the missing text from this source passage.",
+      "prompt": "A collection contains ____ tokens and four counters.",
+      "choices": [
+        "eight",
+        "four"
+      ],
+      "hint": "Read the source passage again.",
+      "telemetryKey": "challenge1"
+    }
+  ],
+  "visuals": {
+    "theme": "PAPER",
+    "assets": [
+      "FICTIONAL_COMPANION"
+    ]
+  },
+  "reward": {
+    "type": "DECORATIVE_STAR",
+    "quantity": 1
+  },
+  "progress": {
+    "status": "CREATED",
+    "sequence": 0,
+    "phaseId": null,
+    "activeChallengeId": null,
+    "attempts": 0,
+    "hintsUsed": 0,
+    "resolved": []
+  }
+}

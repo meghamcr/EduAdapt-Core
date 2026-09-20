@@ -1,5 +1,10 @@
 # Phase 3F — trusted gameplay evidence and source-recall mastery
 
+Phase 3G now adds the versioned sanitized projection, authorized restore/event
+boundary and full learning-loop composition. See [Unity runtime](unity-runtime.md)
+and [integration/security review](learning-loop-review.md) for the current APIs.
+The original Phase 3F audit and SQL verification below are historical records.
+
 ## Audit and scope
 
 Audited clean checkpoint: `3e59926`. The implemented generation/persistence chain
@@ -41,9 +46,11 @@ Prisma relations on User/GameSpec/CurriculumNode/ArtifactVersion are navigation
 only. No Topic/Subtopic or objective associations are fabricated. Sessions/events
 link to protected parent identities through restrictive foreign keys.
 
-SQL: `prisma/proposals/phase3f/migration.sql`. It is intentionally outside the
-configured `prisma/migrations` directory: deployment and migration-baseline
-reconciliation remain subject to human review. The local Prisma schema now
+Original proposal: `prisma/proposals/phase3f/migration.sql`. The current repository
+also contains its identical copy at
+`prisma/migrations/20260919000200_gameplay_evidence/migration.sql`. Its inherited
+header says outside migrations, but the active location is deployable by tooling.
+Deployment and migration-baseline reconciliation remain subject to human review. The local Prisma schema now
 describes these models, but production does not gain them merely by generating
 a client. Never run migrate deploy/db push/reset against Supabase for this work.
 
@@ -94,7 +101,9 @@ evidence. No such production certifier exists yet. Tests inject a clearly synthe
 certifier; this is not authentication or a claim that games are currently playable.
 The callback must be safe to repeat during transaction retries and avoid provider
 or slow external operations inside the transaction. Certification expiry/revocation
-must be integrated before production; no automatic expiry is invented here.
+must be supplied by the trusted policy before production; no automatic expiry is
+invented here. Phase 3G rechecks that policy on each event, duplicate and restore,
+so revoked authorization can stop an existing session.
 
 Session creation fixes game/checksum/version, artifact, mapped node, difficulty and
 adaptive mode. Requests cannot set these independently. Challenge/answer definitions
@@ -233,8 +242,8 @@ runtime certification and lifecycle/revocation policy, scoped database permissio
 rate limits, bounded answer retention and protection of sensitive free text. Service
 identity arguments and private in-process issuance are not authentication. Direct
 browser writes remain outside this trust boundary. Raw responses are restricted
-evidence, not logs. Future Phase 3G must expose a sanitized runtime view, retain
-answer keys server-side, audit Unity/rendering contracts, and implement validated
-transport/session ownership before real play. No renderer or runtime translation
-is implemented here. Future gamification may consume trusted completion separately;
+evidence, not logs. Phase 3G now exposes a sanitized runtime view with server-only
+answer keys and checked session ownership. Authenticated transport and the Unity
+renderer remain unconnected; see the runtime contract documentation.
+Future gamification may consume trusted completion separately;
 XP and leaderboard progress never feed academic mastery.

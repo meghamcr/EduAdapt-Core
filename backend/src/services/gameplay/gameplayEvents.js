@@ -5,7 +5,9 @@ class GameplayError extends Error {
 }
 function fail(code) { throw new GameplayError(code); }
 function fields(value, allowed, required = allowed) {
-  if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).some(k => !allowed.includes(k)) || required.some(k => !Object.hasOwn(value, k))) fail('INVALID_FIELDS');
+  if (!value || Object.getPrototypeOf(value) !== Object.prototype || Reflect.ownKeys(value).some(k => !allowed.includes(k)) ||
+      Object.values(Object.getOwnPropertyDescriptors(value)).some(d => !d.enumerable || !Object.hasOwn(d, 'value')) ||
+      required.some(k => !Object.hasOwn(value, k))) fail('INVALID_FIELDS');
 }
 function id(value) { if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{1,160}$/.test(value)) fail('INVALID_ID'); return value; }
 const CLIENT_EVENTS = Object.freeze(['GAME_STARTED', 'PHASE_STARTED', 'CHALLENGE_PRESENTED', 'ANSWER_SUBMITTED', 'HINT_REQUESTED', 'CHALLENGE_SKIPPED', 'REMEDIATION_STARTED', 'GAME_COMPLETED', 'GAME_ABANDONED']);
