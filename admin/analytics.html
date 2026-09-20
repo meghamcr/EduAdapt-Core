@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Analytics</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="mark">E</div>
+        <div class="brand-text">
+          <div class="name">EduAdapt</div>
+          <div class="subname">Admin Panel</div>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Collapse">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Overview</div>
+        <a href="dashboard.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span class="label">Dashboard</span>
+        </a>
+
+        <div class="sidebar-section-label">Institution</div>
+        <a href="school.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><line x1="4" y1="21" x2="20" y2="21"/><rect x="9" y="12" width="6" height="9"/></svg>
+          <span class="label">School</span>
+        </a>
+        <a href="classes.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <span class="label">Classes</span>
+        </a>
+        <a href="courses-subjects.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6a2 2 0 0 1 2 2v14a1 1 0 0 0-1-1H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a1 1 0 0 1 1-1h7z"/></svg>
+          <span class="label">Courses & Subjects</span>
+        </a>
+
+        <div class="sidebar-section-label">People</div>
+        <a href="teachers.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 3.5 1.5"/><path d="M17 12l2 2 4-4"/></svg>
+          <span class="label">Teachers</span>
+        </a>
+        <a href="students.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3.2"/><circle cx="16" cy="8" r="3.2"/><path d="M2 20c0-3 2.5-5 6-5s6 2 6 5"/><path d="M12 20c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/></svg>
+          <span class="label">Students</span>
+        </a>
+        <a href="users-rbac.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5l-8-3z"/></svg>
+          <span class="label">Users & Roles</span>
+        </a>
+
+        <div class="sidebar-section-label">Insights</div>
+        <a href="analytics.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="12" width="3" height="8"/><rect x="10" y="7" width="3" height="13"/><rect x="16" y="3" width="3" height="17"/></svg>
+          <span class="label">Analytics</span>
+        </a>
+        <a href="broadcasts.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h1l4 4V5l-4 4H5a2 2 0 0 0-2 2z"/><path d="M15 8a4 4 0 0 1 0 8"/><path d="M18 5a8 8 0 0 1 0 14"/></svg>
+          <span class="label">Broadcasts</span>
+        </a>
+        <a href="audit-logs.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/></svg>
+          <span class="label">Audit Logs</span>
+        </a>
+        <a href="reports.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+          <span class="label">Reports</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="#" class="sidebar-link" onclick="clearToken(); window.location.href='login.html'; return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span class="label">Log Out</span>
+        </a>
+        <button class="sidebar-expand-btn" id="sidebarExpand" title="Expand">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </aside>
+    <div class="main-area">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span>EduAdapt</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <span class="crumb-current">Analytics</span>
+        </div>
+        <div class="topbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Search students, teachers, classes...</span>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-user">
+            <div class="topbar-avatar">A</div>
+            <div class="topbar-user-info">
+              <div class="topbar-user-name">Admin</div>
+              <div class="topbar-user-role">School Administrator</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page">
+        <div class="page-header">
+          <h1>Analytics</h1>
+          <p>Grade performance, at-risk classes, and teacher workload.</p>
+        </div>
+
+        <div class="card">
+          <h3>Grade-to-Grade Mastery Comparison</h3>
+          <table>
+            <thead><tr><th>Grade</th><th>Student Count</th><th>Average Mastery</th></tr></thead>
+            <tbody id="gradeMasteryBody"><tr><td colspan="3">Loading...</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>At-Risk Class Identification</h3>
+          <table>
+            <thead><tr><th>Grade</th><th>Section</th><th>Students</th><th>Avg Mastery</th><th>Engaged Ratio</th><th>At Risk?</th><th>Reason</th></tr></thead>
+            <tbody id="atRiskBody"><tr><td colspan="7">Loading...</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <h3>Teacher Workload</h3>
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Courses</th><th>Lessons</th><th>Class Teacher?</th><th>Class Supervised</th></tr></thead>
+            <tbody id="workloadBody"><tr><td colspan="6">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    requireLogin();
+
+    function fmtPercent(val) {
+      return val === null ? '—' : `${val.toFixed(1)}%`;
+    }
+
+    async function loadGradeMastery() {
+      const tbody = document.getElementById('gradeMasteryBody');
+      try {
+        const data = await apiRequest('/analytics/grade-mastery');
+        tbody.innerHTML = data.grades.map(g => `
+          <tr><td>${g.grade}</td><td>${g.studentCount}</td><td>${fmtPercent(g.averageMastery)}</td></tr>
+        `).join('') || '<tr><td colspan="3">No data.</td></tr>';
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    async function loadAtRisk() {
+      const tbody = document.getElementById('atRiskBody');
+      try {
+        const data = await apiRequest('/analytics/at-risk-classes');
+        tbody.innerHTML = data.classes.map(c => `
+          <tr>
+            <td>${c.grade}</td>
+            <td>${c.section}</td>
+            <td>${c.studentCount}</td>
+            <td>${fmtPercent(c.averageMastery)}</td>
+            <td>${c.engagedStudentRatio === null ? '—' : (c.engagedStudentRatio * 100).toFixed(0) + '%'}</td>
+            <td>${c.atRisk ? '<span class="badge badge-rejected">YES</span>' : '<span class="badge badge-approved">NO</span>'}</td>
+            <td>${c.reason}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="7">No data.</td></tr>';
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    async function loadWorkload() {
+      const tbody = document.getElementById('workloadBody');
+      try {
+        const data = await apiRequest('/analytics/teacher-workload');
+        tbody.innerHTML = data.teachers.map(t => `
+          <tr>
+            <td>${t.name}</td>
+            <td>${t.email}</td>
+            <td>${t.courseCount}</td>
+            <td>${t.lessonCount}</td>
+            <td>${t.isClassTeacher ? 'Yes' : 'No'}</td>
+            <td>${t.classSupervised ? `Grade ${t.classSupervised.grade}-${t.classSupervised.section}` : '—'}</td>
+          </tr>
+        `).join('') || '<tr><td colspan="6">No data.</td></tr>';
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    loadGradeMastery();
+    loadAtRisk();
+    loadWorkload();
+  </script>
+</body>
+</html>
