@@ -15,11 +15,13 @@ const broadcastRoutes = require('./routes/broadcastRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const parentDigestRoutes = require('./routes/parentDigestRoutes');
+const curriculumRoutes = require('./routes/curriculumRoutes');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static('uploads'));
 app.use('/api', authRoutes);
 app.use('/api', schoolRoutes);
 app.use('/api', classRoutes);
@@ -33,6 +35,7 @@ app.use('/api', broadcastRoutes);
 app.use('/api', auditRoutes);
 app.use('/api', exportRoutes);
 app.use('/api', parentDigestRoutes);
+app.use('/api', curriculumRoutes);
 
 // Health check — confirms the server is running
 app.get('/api/health', (req, res) => {

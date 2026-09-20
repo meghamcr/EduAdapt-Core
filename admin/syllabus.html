@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EduAdapt Admin - Syllabus</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="mark">E</div>
+        <div class="brand-text">
+          <div class="name">EduAdapt</div>
+          <div class="subname">Admin Panel</div>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle" title="Collapse">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Overview</div>
+        <a href="dashboard.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span class="label">Dashboard</span>
+        </a>
+
+        <div class="sidebar-section-label">Institution</div>
+        <a href="school.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><line x1="4" y1="21" x2="20" y2="21"/><rect x="9" y="12" width="6" height="9"/></svg>
+          <span class="label">School</span>
+        </a>
+        <a href="classes.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <span class="label">Classes</span>
+        </a>
+        <a href="courses-subjects.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6a2 2 0 0 1 2 2v14a1 1 0 0 0-1-1H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a1 1 0 0 1 1-1h7z"/></svg>
+          <span class="label">Courses & Subjects</span>
+        </a>
+        <a href="syllabus.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/></svg>
+          <span class="label">Syllabus</span>
+        </a>
+
+        <div class="sidebar-section-label">People</div>
+        <a href="teachers.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 3.5 1.5"/><path d="M17 12l2 2 4-4"/></svg>
+          <span class="label">Teachers</span>
+        </a>
+        <a href="students.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3.2"/><circle cx="16" cy="8" r="3.2"/><path d="M2 20c0-3 2.5-5 6-5s6 2 6 5"/><path d="M12 20c0-2.5 2-4.5 5-4.5s5 2 5 4.5"/></svg>
+          <span class="label">Students</span>
+        </a>
+        <a href="users-rbac.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5l-8-3z"/></svg>
+          <span class="label">Users & Roles</span>
+        </a>
+
+        <div class="sidebar-section-label">Insights</div>
+        <a href="analytics.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="12" width="3" height="8"/><rect x="10" y="7" width="3" height="13"/><rect x="16" y="3" width="3" height="17"/></svg>
+          <span class="label">Analytics</span>
+        </a>
+        <a href="broadcasts.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a2 2 0 0 0 2 2h1l4 4V5l-4 4H5a2 2 0 0 0-2 2z"/><path d="M15 8a4 4 0 0 1 0 8"/><path d="M18 5a8 8 0 0 1 0 14"/></svg>
+          <span class="label">Broadcasts</span>
+        </a>
+        <a href="audit-logs.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="16" y2="15"/></svg>
+          <span class="label">Audit Logs</span>
+        </a>
+        <a href="reports.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+          <span class="label">Reports</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="#" class="sidebar-link" onclick="clearToken(); window.location.href='login.html'; return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span class="label">Log Out</span>
+        </a>
+        <button class="sidebar-expand-btn" id="sidebarExpand" title="Expand">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+    </aside>
+    <div class="main-area">
+      <div class="topbar">
+        <div class="topbar-left">
+          <span>EduAdapt</span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <span class="crumb-current">Syllabus</span>
+        </div>
+        <div class="topbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Search students, teachers, classes...</span>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-user">
+            <div class="topbar-avatar">A</div>
+            <div class="topbar-user-info">
+              <div class="topbar-user-name">Admin</div>
+              <div class="topbar-user-role">School Administrator</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page">
+        <div class="page-header">
+          <h1>Syllabus</h1>
+          <p>Add curriculum books, chapters, and topics — text, PDFs, PPTs, or videos.</p>
+        </div>
+
+        <div class="card">
+          <h3>Create Book</h3>
+          <form id="createBookForm">
+            <label for="board">Board</label>
+            <input type="text" id="board" placeholder="NCERT (default)">
+
+            <label for="grade">Grade</label>
+            <input type="text" id="grade" required placeholder="e.g. 8">
+
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" required placeholder="e.g. Science">
+
+            <label for="title">Title</label>
+            <input type="text" id="title" required placeholder="e.g. Living Science">
+
+            <label for="edition">Edition</label>
+            <input type="text" id="edition" placeholder="Optional">
+
+            <button type="submit">Create Book</button>
+          </form>
+          <div id="bookMessage"></div>
+        </div>
+
+        <div class="card">
+          <h3>All Books</h3>
+          <table>
+            <thead><tr><th>Board</th><th>Grade</th><th>Subject</th><th>Title</th><th></th></tr></thead>
+            <tbody id="booksTableBody"><tr><td colspan="5">Loading...</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="card" id="chaptersSection" style="display:none;">
+          <h3>Chapters for <span id="selectedBookTitle"></span></h3>
+          <form id="createChapterForm">
+            <label for="chapterNumber">Chapter Number</label>
+            <input type="number" id="chapterNumber" required placeholder="e.g. 1">
+
+            <label for="chapterTitle">Title</label>
+            <input type="text" id="chapterTitle" required placeholder="e.g. Crop Production and Management">
+
+            <label for="learningObjectives">Learning Objectives (one per line, optional)</label>
+            <textarea id="learningObjectives" rows="3" placeholder="Understand agricultural practices&#10;Identify crop types"></textarea>
+
+            <button type="submit">Create Chapter</button>
+          </form>
+          <div id="chapterMessage"></div>
+
+          <table>
+            <thead><tr><th>#</th><th>Title</th><th></th></tr></thead>
+            <tbody id="chaptersTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="card" id="topicsSection" style="display:none;">
+          <h3>Topics for <span id="selectedChapterTitle"></span></h3>
+          <form id="createTopicForm">
+            <label for="topicTitle">Title</label>
+            <input type="text" id="topicTitle" required placeholder="e.g. Introduction to Farming">
+
+            <label for="topicType">Type</label>
+            <select id="topicType">
+              <option value="TEXT">Text</option>
+              <option value="PDF">PDF</option>
+              <option value="PPT">PPT</option>
+              <option value="VIDEO">Video</option>
+            </select>
+
+            <label for="topicDescription">Description</label>
+            <input type="text" id="topicDescription" placeholder="Optional">
+
+            <div id="textContentField">
+              <label for="textContent">Content</label>
+              <textarea id="textContent" rows="3" placeholder="Enter the topic text..."></textarea>
+            </div>
+
+            <div id="fileField" style="display:none;">
+              <label for="topicFile">File (PDF / PPT / MP4 / WebM / MOV)</label>
+              <input type="file" id="topicFile">
+            </div>
+
+            <label for="topicOrderIndex">Order Index</label>
+            <input type="number" id="topicOrderIndex" required placeholder="e.g. 1">
+
+            <button type="submit">Add Topic</button>
+          </form>
+          <div id="topicMessage"></div>
+
+          <table>
+            <thead><tr><th>Order</th><th>Title</th><th>Type</th><th>Content</th></tr></thead>
+            <tbody id="topicsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script>
+    requireLogin();
+
+    let selectedBookId = null;
+    let selectedChapterId = null;
+
+    async function loadBooks() {
+      const tbody = document.getElementById('booksTableBody');
+      try {
+        const data = await apiRequest('/curriculum/books');
+        if (data.books.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5">No books yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.books.map(b => `
+          <tr>
+            <td>${b.board}</td>
+            <td>${b.grade}</td>
+            <td>${b.subject}</td>
+            <td>${b.title}</td>
+            <td><button class="secondary" onclick="viewChapters('${b.id}', '${b.title.replace(/'/g, "\\'")}')">View Chapters</button></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="5" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('createBookForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const board = document.getElementById('board').value || undefined;
+      const grade = document.getElementById('grade').value;
+      const subject = document.getElementById('subject').value;
+      const title = document.getElementById('title').value;
+      const edition = document.getElementById('edition').value || undefined;
+      const msgEl = document.getElementById('bookMessage');
+      msgEl.textContent = ''; msgEl.className = '';
+      try {
+        await apiRequest('/curriculum/books', 'POST', { board, grade, subject, title, edition });
+        msgEl.textContent = 'Book created successfully.';
+        msgEl.className = 'success';
+        document.getElementById('createBookForm').reset();
+        loadBooks();
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    });
+
+    async function viewChapters(bookId, bookTitle) {
+      selectedBookId = bookId;
+      document.getElementById('chaptersSection').style.display = 'block';
+      document.getElementById('selectedBookTitle').textContent = bookTitle;
+      document.getElementById('topicsSection').style.display = 'none';
+      await loadChapters();
+    }
+
+    async function loadChapters() {
+      const tbody = document.getElementById('chaptersTableBody');
+      try {
+        const data = await apiRequest(`/curriculum/books/${selectedBookId}/chapters`);
+        if (data.chapters.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3">No chapters yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.chapters.map(c => `
+          <tr>
+            <td>${c.chapterNumber}</td>
+            <td>${c.title}</td>
+            <td><button class="secondary" onclick="viewTopics('${c.id}', '${c.title.replace(/'/g, "\\'")}')">View Topics</button></td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('createChapterForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const chapterNumber = document.getElementById('chapterNumber').value;
+      const title = document.getElementById('chapterTitle').value;
+      const objectivesRaw = document.getElementById('learningObjectives').value;
+      const learningObjectives = objectivesRaw.split('\n').map(s => s.trim()).filter(Boolean);
+      const msgEl = document.getElementById('chapterMessage');
+      msgEl.textContent = ''; msgEl.className = '';
+      try {
+        await apiRequest('/curriculum/chapters', 'POST', { bookId: selectedBookId, chapterNumber, title, learningObjectives });
+        msgEl.textContent = 'Chapter created successfully.';
+        msgEl.className = 'success';
+        document.getElementById('createChapterForm').reset();
+        loadChapters();
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    });
+
+    async function viewTopics(chapterId, chapterTitle) {
+      selectedChapterId = chapterId;
+      document.getElementById('topicsSection').style.display = 'block';
+      document.getElementById('selectedChapterTitle').textContent = chapterTitle;
+      await loadTopics();
+    }
+
+    async function loadTopics() {
+      const tbody = document.getElementById('topicsTableBody');
+      try {
+        const data = await apiRequest(`/curriculum/chapters/${selectedChapterId}/nodes`);
+        if (data.nodes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4">No topics yet.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = data.nodes.map(n => {
+          const isFile = n.type !== 'TEXT';
+          const contentDisplay = isFile
+            ? `<a href="${API_BASE.replace('/api','')}${n.content}" target="_blank">Open file</a>`
+            : (n.content.length > 60 ? n.content.slice(0, 60) + '...' : n.content);
+          return `
+            <tr>
+              <td>${n.orderIndex}</td>
+              <td>${n.title}</td>
+              <td><span class="badge badge-pending">${n.type}</span></td>
+              <td>${contentDisplay}</td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="4" class="error">${err.message}</td></tr>`;
+      }
+    }
+
+    document.getElementById('topicType').addEventListener('change', (e) => {
+      const isText = e.target.value === 'TEXT';
+      document.getElementById('textContentField').style.display = isText ? 'block' : 'none';
+      document.getElementById('fileField').style.display = isText ? 'none' : 'block';
+    });
+
+    document.getElementById('createTopicForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('topicTitle').value;
+      const type = document.getElementById('topicType').value;
+      const description = document.getElementById('topicDescription').value;
+      const orderIndex = document.getElementById('topicOrderIndex').value;
+      const msgEl = document.getElementById('topicMessage');
+      msgEl.textContent = ''; msgEl.className = '';
+
+      const formData = new FormData();
+      formData.append('chapterId', selectedChapterId);
+      formData.append('title', title);
+      formData.append('type', type);
+      formData.append('orderIndex', orderIndex);
+      if (description) formData.append('description', description);
+
+      if (type === 'TEXT') {
+        formData.append('textContent', document.getElementById('textContent').value);
+      } else {
+        const fileInput = document.getElementById('topicFile');
+        if (!fileInput.files[0]) {
+          msgEl.textContent = 'Please choose a file.';
+          msgEl.className = 'error';
+          return;
+        }
+        formData.append('file', fileInput.files[0]);
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/curriculum/nodes`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${getToken()}` },
+          body: formData
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Something went wrong');
+
+        msgEl.textContent = 'Topic added successfully.';
+        msgEl.className = 'success';
+        document.getElementById('createTopicForm').reset();
+        document.getElementById('fileField').style.display = 'none';
+        document.getElementById('textContentField').style.display = 'block';
+        loadTopics();
+      } catch (err) {
+        msgEl.textContent = err.message;
+        msgEl.className = 'error';
+      }
+    });
+
+    loadBooks();
+  </script>
+</body>
+</html>
