@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/curriculumIngestion/*.test.js tests/prisma/*.test.js tests/curriculumArtifacts/*.test.js tests/gameGeneration/*.test.js tests/adaptiveLearning/*.test.js tests/gameplay/*.test.js",
+    "test": "node --test tests/curriculumIngestion/*.test.js tests/prisma/*.test.js tests/curriculumArtifacts/*.test.js tests/gameGeneration/*.test.js tests/adaptiveLearning/*.test.js tests/gameplay/*.test.js tests/runtime/*.test.js tests/learningLoop/*.test.js",
     "test:curriculum": "node --test tests/curriculumIngestion/*.test.js",
     "ingest:curriculum": "node src/services/curriculumIngestion/ingestCurriculum.js",
     "test:prisma": "node --test tests/prisma/*.test.js",
@@ -13,7 +13,9 @@
     "test:adaptive": "node --test tests/adaptiveLearning/*.test.js",
     "test:game-generation": "node --test tests/gameGeneration/gameGeneration.test.js",
     "test:game-persistence": "node --test tests/gameGeneration/gamePersistence.test.js",
-    "test:gameplay": "node --test tests/gameplay/*.test.js"
+    "test:gameplay": "node --test tests/gameplay/*.test.js",
+    "test:runtime": "node --test tests/runtime/*.test.js",
+    "test:learning-loop": "node --test tests/learningLoop/*.test.js"
   },
   "keywords": [],
   "author": "",
