@@ -2817,3 +2817,15 @@ The next concrete task is:
 > **Implement a generic, configuration-driven, resumable curriculum ingestion runner that preserves the useful retry/resume/summary behaviour of the old `batchIngestGrade6.js` without hard-coding grade, subject, book, chapter count, source directory, or PDF filename conventions. Keep database import explicit so the first Grade 4 Mathematics chapter can be manually inspected before being written to Supabase.**
 
 After that is validated, continue toward the full curriculum → adaptive game generation → Unity gameplay → learner-model feedback loop described in this document.
+
+## October 8 continuation — implementation bridge checkpoint
+
+Current local source-of-truth coverage is **12/24 PASS**: Maths 1–8 and 12–14; World Around Us 1. Maths 9–11 and World 2–10 remain missing/provider-failed. All saved artifacts remain UNREVIEWED. The existing October 2 Living Together artifact supersedes older failure reports and must not be regenerated. Current development packages contain 57 levels and 463 exact-source materials. Twelve artifact hashes and 26 PDF hashes are unchanged.
+
+This continuation made eight real ingestion attempts, all HTTP 503 (World 2 and 3, four each); further calls were paused. No passing chapter, including Maths 1 or World 1, was regenerated.
+
+Added a structured semantic game planner with explicit capability deferrals, optional planned scope binding through existing generation/validation/persistence, server level catalogue/Notes/planning/launch composition, authenticated learning HTTP routes, and a generic Unity HTTP/Notes/source-recall controller. Existing adaptive/evidence/mastery algorithms are reused. The full backend suite passed 634 tests; Unity PlayMode proof passed 12 tests using synthetic in-memory curriculum and deterministic providers. No real Grade 4 curriculum was approved/imported. No live DB, Prisma/migration, Git mutation or deployment occurred.
+
+The product is **not implementation-complete**: provider availability, missing chapters, human source/level review, production identity/access/execution policies, broader validated mechanics, reviewed level-wide advancement policy, and real representative Gemini generation proofs remain. The only executable mechanic family currently supplied by source-game-v1 is exact-source recall (CLOZE/MCQ_CLOZE). Do not claim construction/comprehension/mastery of an entire level. Server-derived page-ordered level IDs differ from local line-aware development package IDs; use the server catalogue and explicit reviewed-level policy.
+
+See `backend/docs/implementation-checkpoint.md` and `backend/docs/level-game-planning.md` for current implementation boundaries and proof commands. Preserve the current working tree; no staging, commit or push was performed.

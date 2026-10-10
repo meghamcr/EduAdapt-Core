@@ -17,10 +17,23 @@ test("native JSON schema uses supported bounded wire structure without recursive
   let body;
   const a = await parseCurriculum(input, { fetchImpl: async (_, opts) => { body = JSON.parse(opts.body); return provider(modelOutput()); } });
   assert.equal(a.nodes.length, 2); const c = body.generationConfig;
-  assert.equal(c.responseMimeType, "application/json"); assert.deepEqual(c.responseJsonSchema, curriculumResponseSchema(false));
+  assert.equal(c.responseMimeType, "application/json"); assert.deepEqual(c.responseJsonSchema, curriculumResponseSchema(false, { board: input.board, grade: String(input.grade), subject: input.subject, book_id: input.bookId, book: input.book, chapter_id: input.chapterId, chapter_number: input.chapterNumber }));
   const schema = curriculumResponseSchema(true); assert.ok(schema.required.includes("objective_evidence"));
   const node = schema.properties.nodes.items; assert.ok(node.required.includes("materials")); assert.equal(node.properties.content, undefined);
   assert.equal(JSON.stringify(schema).includes("$ref"), false); assert.ok(JSON.stringify(schema).length < 6000);
+});
+test("configured identity is constrained on the wire and still checked locally", async () => {
+  const configured = { ...input, grade: 4, chapterTitle: 'Grouping counters' };
+  let body;
+  const output = modelOutput(configured);
+  await parseCurriculum(configured, { fetchImpl: async (_, opts) => { body = JSON.parse(opts.body); return provider(output); } });
+  const properties = body.generationConfig.responseJsonSchema.properties;
+  assert.deepEqual(properties.grade, { type: 'string', enum: ['4'] });
+  assert.deepEqual(properties.chapter.enum, ['Grouping counters']);
+  assert.equal(properties.chapter_number.minimum, configured.chapterNumber);
+  assert.equal(properties.chapter_number.maximum, configured.chapterNumber);
+  output.grade = 'Grade 4';
+  await assert.rejects(parseCurriculum(configured, { fetchImpl: async () => provider(output) }), { code: 'OUTPUT_IDENTITY_MISMATCH' });
 });
 test("balanced Markdown wrapper is removed without modifying strings or educational content", async () => {
   const output = modelOutput(); output.nodes[1].content = 'Preserve literal braces { }, quotes "x", and code ``` as source text.';

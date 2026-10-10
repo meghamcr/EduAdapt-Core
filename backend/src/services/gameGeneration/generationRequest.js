@@ -1,3 +1,4 @@
+const { isDevelopmentContext } = require('../../development/developmentWorkspace');
 'use strict';
 
 const { freeze } = require('../adaptiveLearning/learnerStateProvider');
@@ -8,7 +9,7 @@ const issued = new WeakSet();
 function fail(code) { throw Object.assign(new Error(code), { code }); }
 function requireRequest(request) { if (!issued.has(request)) fail('BOUNDED_REQUEST_REQUIRED'); }
 function inspect(context, decision) {
-  if (!Object.isFrozen(context) || context?.contextVersion !== 1 || context.grounding?.reviewStatus !== 'APPROVED' || context.grounding?.imported !== true ||
+  if (!Object.isFrozen(context) || context?.contextVersion !== 1 || (context.grounding?.reviewStatus !== 'APPROVED' && !isDevelopmentContext(context)) || context.grounding?.imported !== true ||
       context.constraints?.academicScopeLocked !== true || context.constraints?.allowAcademicInference !== false || context.constraints?.contentScope !== 'SELECTED_NODE_ONLY' ||
       context.constraints?.hierarchyIsNavigationOnly !== true || context.constraints?.chapterObjectivesImplyNodeApplicability !== false ||
       context.constraints?.allowPrerequisiteInference !== false || context.constraints?.preserveUnansweredTasks !== true) fail('TRUSTED_CONTEXT_REQUIRED');
@@ -26,7 +27,7 @@ function inspect(context, decision) {
       (a.mode === 'PREREQUISITE') !== !a.dependentWorkAllowed) fail('DECISION_SCOPE_MISMATCH');
 }
 
-function buildGenerationRequest({ context, decision, prerequisite } = {}) {
+function buildGenerationRequest({ context, decision, prerequisite, planning } = {}) {
   inspect(context, decision);
   let selected = context, selectedDecision = decision, prerequisiteFor = null;
   if (!decision.academicDecision.dependentWorkAllowed) {
@@ -40,6 +41,8 @@ function buildGenerationRequest({ context, decision, prerequisite } = {}) {
   } else if (prerequisite) fail('UNEXPECTED_PREREQUISITE_CONTEXT');
   // Clone before async work; no caller-held mutable nested data crosses the boundary.
   const c = copyJson(selected, LIMITS.requestBytes), d = copyJson(selectedDecision, LIMITS.requestBytes);
+  const scope = planning ? require('../gamePlanning/planningScope').validatePlanningScope(selected, planning) : null;
+  if (scope && prerequisiteFor) fail('PLANNED_PREREQUISITE_UNSUPPORTED');
   if (!Array.isArray(c.curriculum.materials) || !Array.isArray(c.grounding.sourceRegistry)) fail('SOURCE_EVIDENCE_INVALID');
   const evidence = [];
   c.curriculum.materials.forEach((material, index) => {
@@ -48,16 +51,19 @@ function buildGenerationRequest({ context, decision, prerequisite } = {}) {
         !['NOT_APPLICABLE', 'VISUAL_DEPENDENCY', 'VISUAL_UNRESOLVED'].includes(material.visualDependency) ||
         !Array.isArray(material.sourceRefs) || !material.sourceRefs.length || material.sourceRefs.some(ref => !c.grounding.sourceRegistry.some(doc =>
           doc.sourceId === ref.sourceId && /^[a-f0-9]{64}$/.test(doc.sha256) && Number.isSafeInteger(ref.page) && doc.pages.includes(ref.page)))) fail('SOURCE_EVIDENCE_INVALID');
-    if (material.studentCompletion || material.visualDependency !== 'NOT_APPLICABLE' ||
-        !['explanation', 'definition', 'concept', 'worked_example', 'source_provided_answer', 'observation'].includes(material.role)) return;
+    if (scope && !scope.materialIndexes.includes(index)) return;
+    if (scope?.mechanic !== 'CONSTRUCTION' && (material.studentCompletion || material.visualDependency !== 'NOT_APPLICABLE' ||
+        !['explanation', 'definition', 'concept', 'worked_example', 'source_provided_answer', 'observation', ...(scope ? ['story_context'] : [])].includes(material.role))) return;
     if (material.text.length > 12000) fail('SOURCE_EVIDENCE_TOO_LARGE');
     evidence.push({ id: `e_${index}_${fingerprint(material).slice(0, 20)}`, authority: material.authority, role: material.role,
-      text: material.text, sourceRefs: material.sourceRefs });
+      text: material.text, sourceRefs: material.sourceRefs, ...(scope ? {materialRef:scope.materialRefs[scope.materialIndexes.indexOf(index)]} : {}), ...(material.sourceUnitIds ? {sourceUnitIds:material.sourceUnitIds} : {}) });
   });
   if (!evidence.length) fail('NO_SUPPORTED_SOURCE_MATERIAL');
+  if (scope && evidence.length !== scope.materialIndexes.length) fail('PLANNED_MATERIAL_NOT_SUPPORTED');
   if (evidence.length > LIMITS.evidenceCount) fail('SOURCE_EVIDENCE_TOO_LARGE');
   const base = {
     requestVersion: VERSION,
+    ...(scope ? { planning: scope } : {}),
     academicGrounding: {
       target: { artifactVersionId: c.curriculum.artifactVersionId, nodeId: c.curriculum.nodeId, mappedNodeId: c.curriculum.mappedNodeId },
       mode: prerequisiteFor ? 'PREREQUISITE' : d.academicDecision.mode, prerequisiteFor,
@@ -80,6 +86,7 @@ function buildGenerationRequest({ context, decision, prerequisite } = {}) {
       'MCQ alternatives must be distinct source fragments from the same passage. Correct answer must be an option.',
       'Use WELCOME/CELEBRATE on INTRO/COMPLETE; READ_SOURCE on TEACH/DEMONSTRATE; TRY_WITH_SUPPORT for STEP_BY_STEP, otherwise COMPLETE_CHALLENGES.'] }
   };
+  if (scope) base.outputContract.rules.push(`Use only ${scope.mechanic} challenges. Include at least one challenge for every selected evidence item. The instructional purpose is ${scope.purpose}; do not claim reasoning or comprehension mastery.`);
   const request = { ...base, gameId: `game_${fingerprint(base)}` };
   if (Buffer.byteLength(JSON.stringify(request)) > LIMITS.requestBytes) fail('REQUEST_TOO_LARGE');
   freeze(request); issued.add(request); return request;

@@ -5,23 +5,33 @@ const array = items => ({ type: "array", items, minItems: 1 });
 
 // Provider wire format only. Parent IDs express recursive hierarchy without a
 // recursive JSON Schema. Graph validity, source authority and identity stay local.
-function curriculumResponseSchema(withSourceContext = true) {
+function curriculumResponseSchema(withSourceContext = true, identity = {}, anchoredText = false) {
   const reference = object({ sourceId: string, page: { type: "integer", minimum: 1 } });
   const material = object({
     role: { type: "string", enum: ROLES },
     authority: { type: "string", enum: AUTHORITIES },
     evidence_kind: { type: "string", enum: EVIDENCE_KINDS },
     text: string, source_refs: array(reference), student_completion: { type: "boolean" },
+    ...(anchoredText ? { source_unit_ids: { type: "array", items: string } } : {}),
     visual: object({ status: { type: "string", enum: ["NOT_APPLICABLE", "VISUAL_DEPENDENCY", "VISUAL_UNRESOLVED"] }, description: string })
   });
   const node = object({ temp_id: string, parent_temp_id: string, title: string,
     type: string, description: string, order: { type: "integer", minimum: 1 },
     ...(withSourceContext ? { materials: array(material) } : { content: string }) });
-  return object({ source_coverage_complete: { type: "boolean" },
+  const schema = object({ source_coverage_complete: { type: "boolean" },
     board: string, grade: string, subject: string, book_id: string, book: string,
     chapter_id: string, chapter_number: { type: "integer", minimum: 1 }, chapter: string,
     learning_objectives: array(string),
     ...(withSourceContext ? { objective_evidence: array(array(reference)) } : {}),
     nodes: array(node) });
+  // Identity comes from validated configuration, not model interpretation of
+  // cover text. Keep local equality checks as a separate fail-closed boundary.
+  for (const key of ["board", "grade", "subject", "book_id", "book", "chapter_id", "chapter"]) {
+    if (typeof identity[key] === "string" && identity[key]) schema.properties[key] = { type: "string", enum: [identity[key]] };
+  }
+  if (Number.isSafeInteger(identity.chapter_number) && identity.chapter_number > 0) {
+    schema.properties.chapter_number = { type: "integer", minimum: identity.chapter_number, maximum: identity.chapter_number };
+  }
+  return schema;
 }
 module.exports = { curriculumResponseSchema };

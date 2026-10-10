@@ -19,6 +19,8 @@ const instructionalPolicy = object({
   challengeIntensity: enumeration(['EASY', 'MEDIUM', 'HARD']), reinforcementLevel: enumeration(['HIGH', 'STANDARD'])
 });
 const hint = object({ template: enumeration(['REREAD_SOURCE']), evidenceId: identifier });
+const constructionSchema = require('../educationalVisuals/construction').schema;
+const challengeObject = properties => { const s=object(properties); s.required=s.required.filter(k=>k!=='construction'); return s; };
 const schema = freeze(object({
   contractVersion: enumeration([VERSION]), gameId: identifier, specVersion: integer(1, 1),
   metadata: object({ title: enumeration(['Source Quest', 'Discovery Trail', 'Memory Journey']),
@@ -33,8 +35,8 @@ const schema = freeze(object({
   phases: array(object({ id: identifier, type: enumeration(PHASES),
     instruction: enumeration(['WELCOME', 'READ_SOURCE', 'TRY_WITH_SUPPORT', 'COMPLETE_CHALLENGES', 'CELEBRATE']),
     teachingRefs: array(identifier, 0, 64) }), 3, 10),
-  challenges: array(object({ id: identifier, type: enumeration(['CLOZE', 'MCQ_CLOZE']), phaseId: identifier,
-    prompt: object({ template: enumeration(['SOURCE_CLOZE']), evidenceId: identifier, start: integer(0, 11999), end: integer(1, 12000) }),
+  challenges: array(challengeObject({ id: identifier, construction: constructionSchema, type: enumeration(['CLOZE', 'MCQ_CLOZE', 'CONSTRUCTION']), phaseId: identifier,
+    prompt: object({ template: enumeration(['SOURCE_CLOZE','BUILD_MODEL']), evidenceId: identifier, start: integer(0, 11999), end: integer(1, 12000) }),
     groundingRefs: array(identifier, 1, 1), learningObjectiveRefs: objectiveRefs,
     correctAnswer: text(120), options: array(text(120), 0, 6),
     feedback: object({ correct: enumeration(['MATCHED_SOURCE']), incorrect: enumeration(['REVISIT_SOURCE']), evidenceId: identifier }),
@@ -59,6 +61,7 @@ const templates = freeze({
   LET_US_EXPLORE: 'Let us explore!', TRY_TOGETHER: 'Let us try together!', KEEP_GOING: 'Keep going!',
   WELCOME: 'Welcome to the source quest.', READ_SOURCE: 'Read the source passage.', TRY_WITH_SUPPORT: 'Read the passage, find the missing text, then check your answer.',
   COMPLETE_CHALLENGES: 'Complete the source challenges.', CELEBRATE: 'You completed the quest!',
+  BUILD_MODEL: 'Build the GENERATED reference model. Drag and rotate the blocks. This is a new practice model, not the textbook picture.',
   SOURCE_CLOZE: 'Restore the missing text from this source passage.', REREAD_SOURCE: 'Read the source passage again.',
   MATCHED_SOURCE: 'Your answer matches the source text.', REVISIT_SOURCE: 'Compare your answer with the source text.'
 });

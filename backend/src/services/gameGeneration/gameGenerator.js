@@ -6,10 +6,10 @@ const { buildGenerationRequest } = require('./generationRequest');
 const { validateGame, decodeCandidate } = require('./gameValidation');
 const { LIMITS, VERSION } = require('./gameContract');
 const issuedResults = new WeakMap();
-function generationInputIdentity({ context, decision, prerequisite }) {
+function generationInputIdentity({ context, decision, prerequisite, planning }) {
   return { context: fingerprint(context), decision: fingerprint(decision), prerequisite: prerequisite ? {
     context: fingerprint(prerequisite.context), decision: fingerprint(prerequisite.decision)
-  } : null };
+  } : null, ...(planning ? { planning: fingerprint(planning) } : {}) };
 }
 function requireValidatedGeneration(result) {
   const binding = issuedResults.get(result);
@@ -23,7 +23,10 @@ function createGameGenerator(provider, { maxRepairs = 1 } = {}) {
     const state = { generationAttempts: 0, repairAttempts: 0, validationResults: [] };
     const failure = (code, stage) => freeze({ ok: false, failure: { code, stage }, ...state });
     let request, inputIdentity;
-    try { request = buildGenerationRequest(input); inputIdentity = freeze(generationInputIdentity(input)); }
+    try {
+      if (input.planning) require('../gamePlanning/gamePlanner').requirePlannedSelection(input.planning);
+      request = buildGenerationRequest(input); inputIdentity = freeze(generationInputIdentity(input));
+    }
     catch { return failure('GENERATION_INPUT_INVALID', 'request'); }
     let payload = request;
     for (let attempt = 0; attempt <= maxRepairs; attempt++) {
@@ -43,7 +46,7 @@ function createGameGenerator(provider, { maxRepairs = 1 } = {}) {
           // Same request can generate multiple candidates. Bind events to the
           // actual spec checksum as well as its request-family gameId.
           telemetryContext: { ...structuredClone(game.telemetry.binding), specificationFingerprint },
-          warnings: ['NODE_OBJECTIVE_APPLICABILITY_NOT_ESTABLISHED', 'SOURCE_RECALL_ONLY_NOT_REASONING_OR_MASTERY_PROOF'] }, ...state });
+          warnings: ['NODE_OBJECTIVE_APPLICABILITY_NOT_ESTABLISHED', ...(game.challenges.some(c=>c.type==='CONSTRUCTION') ? ['GENERATED_MODEL_NOT_TEXTBOOK_ANSWER_OR_MASTERY_PROOF'] : ['SOURCE_RECALL_ONLY_NOT_REASONING_OR_MASTERY_PROOF'])] }, ...state });
         issuedResults.set(result, freeze({ inputIdentity, requestFingerprint: fingerprint(request), specificationFingerprint }));
         return result;
       }

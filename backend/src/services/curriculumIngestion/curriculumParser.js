@@ -1,5 +1,6 @@
 const { buildGeminiRequest } = require("./geminiRequest");
 const { curriculumResponseSchema } = require("./curriculumResponseSchema");
+const { resolveSourceText, furnitureOnlyPages } = require("./textAuthority");
 const { responseMetadata, jsonFailureKind, networkMetadata } = require("./providerDiagnostics");
 const { AUTHORITIES, FIDELITY_INSTRUCTIONS, renderMaterials } = require("./sourceFidelity");
 const { IngestionError } = require("./geminiRetry");
@@ -101,6 +102,9 @@ async function parseCurriculumImpl({
       !Number.isSafeInteger(chapterNumber) || chapterNumber < 1 || typeof edition !== "string" || typeof chapterTitle !== "string") {
     throw new IngestionError("INPUT_INVALID", "Invalid grade label, chapter number, edition or chapter title.");
   }
+  const expected = { board, grade: String(grade), subject, book_id: bookId, book, chapter_id: chapterId, chapter_number: chapterNumber };
+  const anchoredText = sourceContext?.mode === "text" && Array.isArray(sourceContext.textUnits);
+  const responseSchema = curriculumResponseSchema(!!sourceContext, { ...expected, ...(chapterTitle ? { chapter: chapterTitle } : {}) }, anchoredText);
   const prompt = `
 ${sourceContext ? FIDELITY_INSTRUCTIONS : ""}
 
@@ -138,6 +142,7 @@ Book: ${book}
 Chapter Number: ${chapterNumber}
 Chapter ID: ${chapterId}
 Expected chapter title (if configured): ${chapterTitle || "Determine from source"}
+Exact identity JSON (copy values and types without adding labels): ${JSON.stringify(expected)}
 
 ==================================================
 SOURCE-GROUNDING RULES
@@ -395,6 +400,32 @@ Follow the native response JSON schema supplied in generationConfig.
 Copy authoritative identity fields exactly. Generate flat nodes with temp_id and
 parent_temp_id; this supports any meaningful hierarchy depth.
 ${sourceContext ? "Return materials and objective_evidence. Do NOT duplicate materials into a content field; authoritative content is derived locally from explicit materials." : "Return source-grounded content on each node."}
+${sourceContext ? `FINAL TEXT-AUTHORITY CHECK:
+Put concise organizational summaries in description, not SOURCE_TEXT materials.
+For parent-node materials, select actual source wording (a heading or short printed sentence
+is sufficient). Never write a new introductory explanation to fill a parent node.
+SOURCE_TEXT must copy printed wording, apart from whitespace and obvious extraction cleanup.
+Do not append parenthetical explanations or option mappings. Unpositioned image letters/numbers
+in extracted text do not establish which figure or exercise they label. Where that association
+is unavailable, omit the guessed mapping, preserve the full textual task, cite its page and
+mark its visual dependency. Do not merge adjacent tasks into a single new task or change
+their givens. Separate task entries can share a node without reconstructing any figures.` : ""}
+${anchoredText ? `AUTHORITATIVE TEXT IS ASSEMBLED LOCALLY FROM SOURCE UNITS:
+The input contains numbered source lines with id, sourceId, page and text.
+For each EXPLICIT_SOURCE_CONTENT material, select source_unit_ids containing its COMPLETE
+printed wording, including continuation lines, every subpart, given, label and relevant note.
+Your text field for explicit material must be empty: it is replaced locally with the selected
+source lines in source order. Your source_refs are also derived from those units locally.
+Never create a curriculum node for each line. Group source units into meaningful materials
+and semantic nodes. Keep related multi-line questions/examples together. Every node needs
+at least one explicit source material; a source heading or actual instruction can serve a parent.
+Do not create summary-only parents. Use description for organizational summaries.
+Non-explicit materials may use text with source_unit_ids: []; they remain outside authoritative content.
+Account for all instructionally meaningful source units. Omit only decorative/repeated headings,
+page numbers, running footers and irrelevant printing metadata. Isolated labels whose figure
+association is unavailable can remain with the relevant page task and a visual warning;
+do not invent an association. Source-unit selection does not authorize filling blanks.` : ""}
+${anchoredText ? "Preserve instructional progression and sibling source order. Keep examples, passages and their questions together; do not move later review exercises into earlier lessons solely to group similar topics. Source units are evidence anchors, not learning levels or mandatory node boundaries." : ""}
 
 ==================================================
 TEXTBOOK CHAPTER
@@ -402,13 +433,13 @@ TEXTBOOK CHAPTER
 
 ---------------- BEGIN TEXTBOOK TEXT ----------------
 
-${sourceContext?.mode === "pdf" ? "Read the attached original PDFs for BOTH text and visuals. Each PDF is immediately preceded by its sourceId and originalPdfPages array. The nth array entry is the original 1-based PDF page of attachment page n. Cite that sourceId and original page; do not use printed textbook numbering. Extracted text remains local and is not duplicated here." : sourceContext ? JSON.stringify({ mode: sourceContext.mode, documents: sourceContext.documents }) : extractedText}
+${sourceContext?.mode === "pdf" ? "Read the attached original PDFs for BOTH text and visuals. Each PDF is immediately preceded by its sourceId and originalPdfPages array. The nth array entry is the original 1-based PDF page of attachment page n. Cite that sourceId and original page; do not use printed textbook numbering. Extracted text remains local and is not duplicated here." : anchoredText ? JSON.stringify({ mode: "text", sourceUnits: sourceContext.textUnits }) : sourceContext ? JSON.stringify({ mode: sourceContext.mode, documents: sourceContext.documents }) : extractedText}
 
 ---------------- END TEXTBOOK TEXT ----------------
 `;
 
-  if (prepareOnly) return buildGeminiRequest(prompt, { mediaParts: sourceContext?.mediaParts || [], responseSchema: curriculumResponseSchema(!!sourceContext), maxOutputTokens });
-  const responseText = await callGemini(prompt, { model, apiKey, timeoutMs, maxOutputTokens, mediaParts: sourceContext?.mediaParts || [], responseSchema: curriculumResponseSchema(!!sourceContext), diagnostics, fetchImpl });
+  if (prepareOnly) return buildGeminiRequest(prompt, { mediaParts: sourceContext?.mediaParts || [], responseSchema, maxOutputTokens });
+  const responseText = await callGemini(prompt, { model, apiKey, timeoutMs, maxOutputTokens, mediaParts: sourceContext?.mediaParts || [], responseSchema, diagnostics, fetchImpl });
   diagnostics.stage = "curriculum_json";
   const normalized = cleanJsonResponse(responseText);
   diagnostics.wrapperRemoved = normalized !== responseText.trim();
@@ -421,7 +452,6 @@ ${sourceContext?.mode === "pdf" ? "Read the attached original PDFs for BOTH text
   diagnostics.stage = "curriculum_contract";
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new IngestionError("OUTPUT_INVALID", "Curriculum output must be an object.");
   if (parsed.source_coverage_complete !== true) throw new IngestionError("OUTPUT_INCOMPLETE", "Model did not confirm full supplied-source coverage.");
-  const expected = { board, grade: String(grade), subject, book_id: bookId, book, chapter_id: chapterId, chapter_number: chapterNumber };
   for (const [key, value] of Object.entries(expected)) {
     if (parsed[key] !== value) throw new IngestionError("OUTPUT_IDENTITY_MISMATCH", `Model changed or omitted ${key}.`);
   }
@@ -436,7 +466,7 @@ ${sourceContext?.mode === "pdf" ? "Read the attached original PDFs for BOTH text
     let fidelity = {};
     if (sourceContext) {
       if (!Array.isArray(node.materials) || node.materials.some(item => !item || typeof item.text !== "string" || !AUTHORITIES.includes(item.authority))) throw new IngestionError("OUTPUT_INVALID", "Structured source materials required.");
-      const classified = node.materials.map(item => ({ ...item,
+      const classified = resolveSourceText(node.materials, anchoredText ? sourceContext.textUnits : undefined).map(item => ({ ...item,
         review_required: ["MODEL_VISUAL_INTERPRETATION", "MODEL_INFERENCE"].includes(item.authority),
         visual: item.visual && { ...item.visual, authority: "MODEL_VISUAL_INTERPRETATION", review_required: true }
       }));
@@ -453,8 +483,20 @@ ${sourceContext?.mode === "pdf" ? "Read the attached original PDFs for BOTH text
   const curriculum = { ...expected, edition, chapter: parsed.chapter,
     learning_objectives: parsed.learning_objectives, nodes,
     ...(sourceContext ? { objective_evidence: parsed.objective_evidence, source_context: {
-      version: 1, authorityVersion: 2, mode: sourceContext.mode, documents: sourceContext.documents.map(doc => ({ sourceId: doc.sourceId, sha256: doc.sha256, pages: doc.pages.map(page => page.page) }))
+      version: 1, authorityVersion: 2, mode: sourceContext.mode, documents: sourceContext.documents.map(doc => ({ sourceId: doc.sourceId, sha256: doc.sha256, pages: doc.pages.map(page => page.page), ...(anchoredText ? { furnitureOnlyPages: furnitureOnlyPages(doc) } : {}) }))
     } } : {}) };
+  if (anchoredText) {
+    const selected = parsed.nodes.flatMap(node => node.materials
+      .filter(item => item.authority === "EXPLICIT_SOURCE_CONTENT")
+      .flatMap(item => item.source_unit_ids));
+    const used = new Set(selected);
+    diagnostics.sourceText = {
+      availableUnits: sourceContext.textUnits.length,
+      selectedUnits: used.size,
+      unselectedUnits: sourceContext.textUnits.length - used.size,
+      repeatedSelections: selected.length - used.size
+    };
+  }
   const validation = validateCurriculum(curriculum);
   if (!validation.valid) throw new IngestionError("OUTPUT_INVALID", "Generated curriculum failed structural validation.", { details: validation.errors });
   try {

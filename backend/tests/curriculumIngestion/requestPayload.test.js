@@ -56,8 +56,9 @@ test("text-only mode retains full labelled text once and does not silently disca
   const p = await prepare([[1]], "text"), { request } = await capture(p);
   const parts = request.contents[0].parts;
   assert.equal(parts.filter(p => p.inlineData).length, 0);
-  const block = JSON.stringify({ mode: "text", documents: p.sourceContext.documents });
+  const block = JSON.stringify({ mode: "text", sourceUnits: p.sourceContext.textUnits });
   assert.equal(parts[0].text.split(block).length - 1, 1);
+  assert.deepEqual(p.sourceContext.textUnits.map(unit => unit.text), p.sourceContext.documents[0].pages[0].text.split("\n").filter(line => line.trim()));
 });
 test("request metrics exactly partition UTF-8 bytes and contain no source, credentials or bodies", async () => {
   const { request } = await capture(await prepare());

@@ -17,7 +17,8 @@ function checkSchema(value, rule, path = '$', errors = []) {
   if (rule.enum && !rule.enum.includes(value)) add('ENUM');
   if (type === 'object') {
     if (Object.keys(value).some(key => !Object.hasOwn(rule.properties, key))) add('UNKNOWN_FIELD');
-    for (const key of rule.required) {
+    for (const key of Object.keys(rule.properties)) {
+      if (!Object.hasOwn(value, key) && !rule.required.includes(key)) continue;
       if (!Object.hasOwn(value, key)) errors.push({ code: 'REQUIRED', path: `${path}.${key}` });
       else checkSchema(value[key], rule.properties[key], `${path}.${key}`, errors);
       if (errors.length >= 100) break;
@@ -110,8 +111,15 @@ function validateGame(candidate, request) {
   unique(game.challenges.map(c => c.id), '$.challenges');
   game.challenges.forEach((c, i) => {
     const path = `$.challenges[${i}]`, ref = hasEvidence(c.prompt.evidenceId, `${path}.prompt.evidenceId`);
+    if (request.planning && c.type !== request.planning.mechanic) add('PLANNED_MECHANIC_MISMATCH', `${path}.type`);
     if (!equal(c.groundingRefs, [c.prompt.evidenceId]) || !claimIds.has(c.prompt.evidenceId)) add('CHALLENGE_GROUNDING', `${path}.groundingRefs`);
-    if (ref) {
+    if (c.type === 'CONSTRUCTION') {
+      const visual = c.construction;
+      const checked = require('../educationalVisuals/construction').validateVisual(visual, ref && {...ref, materialRef: ref.materialRef});
+      if (!checked.valid || !equal(visual, request.planning?.construction)) add('CONSTRUCTION_INVALID', path);
+      if (c.prompt.template !== 'BUILD_MODEL' || c.prompt.start !== 0 || c.prompt.end !== 1 || c.correctAnswer !== 'SERVER_GEOMETRY' || c.options.length) add('CONSTRUCTION_CONTRACT', path);
+    } else if (c.construction || c.prompt.template !== 'SOURCE_CLOZE') add('UNEXPECTED_CONSTRUCTION', path);
+    else if (ref) {
       const { start, end } = c.prompt;
       // UTF-16 offsets, whole token spans only; the prompt is the FULL source
       // passage with this span blanked. Never a model paraphrase/question pair.
@@ -135,6 +143,7 @@ function validateGame(candidate, request) {
     }
     if (policy.guidanceLevel === 'STEP_BY_STEP' && !['GUIDED_PRACTICE', 'REMEDIATION'].includes(phase?.type)) add('GUIDANCE_REQUIRED', `${path}.phaseId`);
   });
+  if (request.planning && a.evidence.some(e => !game.challenges.some(c => c.prompt.evidenceId === e.id))) add('PLANNED_MATERIAL_UNUSED', '$.challenges');
   if (a.mode === 'REMEDIATION' && !game.challenges.some(c => phases.get(c.phaseId)?.type === 'REMEDIATION')) add('REMEDIATION_PHASE_REQUIRED', '$.phases');
   const ids = game.challenges.map(c => c.id);
   if (!equal(game.completion.challengeIds, ids)) add('COMPLETION_MISMATCH', '$.completion');

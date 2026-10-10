@@ -24,15 +24,16 @@ function exactKeys(value, keys) {
       Object.values(Object.getOwnPropertyDescriptors(value)).some(d => !Object.hasOwn(d, 'value'))) fail('PERSISTENCE_INPUT_INVALID');
 }
 function prepare(input, persist) {
-  exactKeys(input, persist ? ['context', 'decision', 'prerequisite', 'result'] : ['context', 'decision', 'prerequisite']);
-  const { context, decision, prerequisite } = input;
+  exactKeys(input, persist ? ['context', 'decision', 'prerequisite', 'planning', 'result'] : ['context', 'decision', 'prerequisite', 'planning']);
+  const { context, decision, prerequisite, planning } = input;
   try {
     requireGenerationContext(context); requireAdaptiveDecision(decision);
     if (prerequisite) {
       exactKeys(prerequisite, ['context', 'decision']);
       requireGenerationContext(prerequisite.context); requireAdaptiveDecision(prerequisite.decision);
     }
-    const request = buildGenerationRequest({ context, decision, prerequisite });
+    if (planning) require('../gamePlanning/gamePlanner').requirePlannedSelection(planning);
+    const request = buildGenerationRequest({ context, decision, prerequisite, planning });
     if (persist) {
       const binding = requireValidatedGeneration(input.result), result = input.result, p = result.package;
       if (!equal(binding.inputIdentity, generationInputIdentity(input)) || binding.requestFingerprint !== fingerprint(request)) fail('GENERATION_INPUT_BINDING_MISMATCH');
@@ -43,7 +44,7 @@ function prepare(input, persist) {
           !validateGame(p.game, request).valid) fail('VALIDATED_PACKAGE_INVALID');
     }
     // New object prevents an asynchronous caller from swapping top-level handles.
-    return { context, decision, prerequisite: prerequisite ? { ...prerequisite } : undefined, request,
+    return { context, decision, prerequisite: prerequisite ? { ...prerequisite } : undefined, planning, request,
       game: persist ? input.result.package.game : undefined };
   } catch (error) {
     if (error instanceof GamePersistenceError) throw error;
@@ -60,6 +61,7 @@ function envelope(game, input) {
     requestFingerprint: fingerprint(input.request), specificationFingerprint,
     contextFingerprint: fingerprint((input.prerequisite || input).context),
     dependentContextFingerprint: input.prerequisite ? fingerprint(input.context) : null,
+    ...(input.planning ? { planning: input.request.planning } : {}),
     academicGrounding: input.request.academicGrounding,
     game,
     telemetryContext: { ...game.telemetry.binding, specificationFingerprint },
@@ -130,6 +132,10 @@ function createGamePersistenceService(db) {
       }
       if (!equal(fresh, original)) fail('GENERATION_CONTEXT_STALE');
     }
+    if (input.planning) {
+      const version = await tx.curriculumArtifactVersion.findUnique({ where: { id: input.context.curriculum.artifactVersionId } });
+      require('../gamePlanning/planningScope').validateScopeAgainstArtifact(version.snapshot, input.planning, require('../../development/developmentWorkspace').sourceEvidenceFor(tx, version));
+    }
   }
   async function persistValidatedGame(input) {
     const prepared = prepare(input, true);
@@ -192,6 +198,11 @@ function createGamePersistenceService(db) {
     }
     const input = forTarget ? { context: loaded.get(JSON.stringify(selections[1])), prerequisite: { context: selected, decision: contract(selected, 'PRIMARY') } } : { context: selected };
     input.decision = contract(input.context, stored.game.academicMode, Boolean(forTarget));
+    if (stored.planning) {
+      const version = await tx.curriculumArtifactVersion.findUnique({ where: { id: selected.curriculum.artifactVersionId } });
+      require('../gamePlanning/planningScope').validateScopeAgainstArtifact(version.snapshot, stored.planning, require('../../development/developmentWorkspace').sourceEvidenceFor(tx, version));
+      input.planning = stored.planning;
+    }
     input.request = buildGenerationRequest(input);
     if (!verifiedRow(row, input)) fail('STORED_GAME_INVALID');
     return returned(row, true);

@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDUADAPT — Learning That Adapts to You</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            pixel: ['"Press Start 2P"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f3ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#1e1b4b',
+              950: '#0a0d18',
+            }
+          },
+          animation: {
+            'float': 'float 5s ease-in-out infinite',
+            'float-delayed': 'float 5s ease-in-out 2.5s infinite',
+            'marquee': 'marquee 25s linear infinite',
+            'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-8px)' },
+            },
+            marquee: {
+              '0%': { transform: 'translateX(0%)' },
+              '100%': { transform: 'translateX(-50%)' },
+            },
+            pulseGlow: {
+              '0%, 100%': { opacity: 0.4 },
+              '50%': { opacity: 0.8 },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg-main: #0a0d18;
+      --bg-card: rgba(15, 23, 42, 0.85);
+      --bg-nav: rgba(10, 13, 24, 0.88);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-glow: rgba(99, 102, 241, 0.15);
+    }
+
+    body.light-mode {
+      --bg-main: #f1f5f9;
+      --bg-card: rgba(255, 255, 255, 0.9);
+      --bg-nav: rgba(255, 255, 255, 0.92);
+      --border-color: rgba(15, 23, 42, 0.12);
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --accent-glow: rgba(99, 102, 241, 0.08);
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      transition: background-color 0.4s ease, color 0.4s ease;
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-main);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #312e81;
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4f46e5;
+    }
+
+    .pixel-crisp {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      transition: background-color 0.4s ease, border-color 0.4s ease;
+    }
+
+    .glass-nav {
+      background: var(--bg-nav);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+      transition: background-color 0.4s ease, border-color 0.4s ease;
+    }
+
+    .modal-backdrop {
+      background-color: rgba(10, 13, 24, 0.88);
+      backdrop-filter: blur(12px);
+    }
+
+    .edu-input {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+    body.light-mode .edu-input {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(15, 23, 42, 0.2);
+    }
+    .edu-input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+  </style>
+</head>
+
+<body class="font-sans antialiased overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+  <header id="navbar" class="fixed top-0 left-0 right-0 z-40 transition-all duration-300 glass-nav">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-20">
+        
+        <!-- Logo -->
+        <a href="#" class="flex items-center space-x-3 group">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-0.5 flex items-center justify-center shadow-lg shadow-indigo-500/30 group-hover:scale-105 transition-transform">
+            <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center relative overflow-hidden">
+              <svg class="w-5 h-5 text-indigo-400 group-hover:text-amber-400 transition-colors" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/>
+              </svg>
+            </div>
+          </div>
+          <span class="text-2xl font-black tracking-tight text-current">EDU<span class="text-indigo-500">ADAPT</span></span>
+        </a>
+
+        <!-- Navigation Links -->
+        <nav class="hidden md:flex items-center space-x-8 text-sm font-medium">
+          <a href="#about" class="text-current opacity-80 hover:opacity-100 hover:text-indigo-500 transition-all">About</a>
+          <a href="#how-it-works" class="text-current opacity-80 hover:opacity-100 hover:text-indigo-500 transition-all">How It Works</a>
+          <a href="#features" class="text-current opacity-80 hover:opacity-100 hover:text-indigo-500 transition-all">Features</a>
+          <a href="#game-experience" class="text-current opacity-80 hover:opacity-100 hover:text-indigo-500 transition-all">Sandbox</a>
+          <a href="#roles" class="text-current opacity-80 hover:opacity-100 hover:text-indigo-500 transition-all">Roles</a>
+          <a href="#developers" class="text-current opacity-80 hover:opacity-100 hover:text-indigo-500 transition-all">Team</a>
+        </nav>
+
+        <!-- Right Utilities: Theme & CTAs -->
+        <div class="hidden md:flex items-center space-x-5">
+          <button id="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle Theme" class="p-2.5 rounded-xl border border-indigo-500/30 bg-indigo-950/40 hover:bg-indigo-900/60 transition-all flex items-center justify-center text-amber-400 group relative">
+            <svg id="theme-icon-sun" class="w-5 h-5 transition-transform group-hover:rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <svg id="theme-icon-moon" class="w-5 h-5 hidden text-indigo-600 transition-transform group-hover:-rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+          </button>
+
+          <button onclick="openAuthModal()" class="text-sm font-semibold opacity-80 hover:opacity-100 transition-opacity">Login</button>
+          
+          <button onclick="openAuthModal()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105 transition-all">
+            Get Started
+          </button>
+        </div>
+
+        <!-- Mobile Drawer Hamburger -->
+        <div class="flex items-center space-x-3 md:hidden">
+          <button onclick="toggleTheme()" aria-label="Toggle Theme Mobile" class="p-2 rounded-lg border border-indigo-500/30 text-amber-400">
+            <svg id="theme-icon-sun-mob" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <svg id="theme-icon-moon-mob" class="w-5 h-5 hidden text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+          </button>
+
+          <button id="mobile-menu-btn" class="p-2 text-current opacity-80 hover:opacity-100">
+            <svg id="menu-icon-open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <svg id="menu-icon-close" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Drawer -->
+    <div id="mobile-menu" class="hidden md:hidden glass-card border-b border-indigo-500/20 px-4 pt-2 pb-6 space-y-3">
+      <a href="#about" class="block py-2 opacity-80 hover:opacity-100 hover:text-indigo-500 font-medium">About</a>
+      <a href="#how-it-works" class="block py-2 opacity-80 hover:opacity-100 hover:text-indigo-500 font-medium">How It Works</a>
+      <a href="#features" class="block py-2 opacity-80 hover:opacity-100 hover:text-indigo-500 font-medium">Features</a>
+      <a href="#game-experience" class="block py-2 opacity-80 hover:opacity-100 hover:text-indigo-500 font-medium">Game Sandbox</a>
+      <a href="#roles" class="block py-2 opacity-80 hover:opacity-100 hover:text-indigo-500 font-medium">Roles</a>
+      <a href="#developers" class="block py-2 opacity-80 hover:opacity-100 hover:text-indigo-500 font-medium">Team</a>
+      <div class="pt-4 border-t border-slate-800/20 flex flex-col space-y-3">
+        <button onclick="openAuthModal()" class="w-full text-center py-2 opacity-80 hover:opacity-100 font-medium">Login</button>
+        <button onclick="openAuthModal()" class="w-full text-center py-2.5 rounded-xl bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-500/30">Get Started</button>
+      </div>
+    </div>
+  </header>
+
+  <section id="hero" class="relative min-h-screen flex items-center justify-center pt-28 pb-16 overflow-hidden">
+    <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+      
+      <!-- Hero Left Text -->
+      <div class="space-y-6 text-center lg:text-left">
+        <div class="inline-flex items-center space-x-2 bg-indigo-950/80 border border-indigo-500/40 px-3.5 py-1.5 rounded-full text-xs font-mono text-cyan-300 backdrop-blur-sm shadow-md">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span>AI-POWERED ADAPTIVE LEARNING PLATFORM</span>
+        </div>
+
+        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-current leading-tight">
+          Learning That <br/>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-pink-400">Adapts to You.</span>
+        </h1>
+
+        <p class="text-current opacity-80 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-light leading-relaxed">
+          EduAdapt transforms curriculum into personalized, interactive learning experiences. Students learn through adaptive educational games while the platform understands their progress, identifies learning gaps, and adjusts what comes next.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+          <button onclick="openAuthModal()" class="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-indigo-500 via-purple-600 to-indigo-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 text-center flex items-center justify-center space-x-2">
+            <span>Start Learning</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          </button>
+          <a href="#how-it-works" class="w-full sm:w-auto px-8 py-3.5 bg-slate-900/80 hover:bg-slate-800 text-slate-100 border border-slate-700 font-semibold rounded-xl transition-all hover:border-indigo-500/50 text-center">
+            Explore EduAdapt
+          </a>
+        </div>
+
+        <div class="pt-4 border-t border-slate-800/40 flex items-center justify-center lg:justify-start space-x-6 text-xs font-mono opacity-80">
+          <span>✓ Built for Students</span>
+          <span>✓ Teachers</span>
+          <span>✓ Schools</span>
+        </div>
+      </div>
+
+      <!-- Hero Right Canvas Browser Frame -->
+      <div class="relative w-full max-w-lg mx-auto lg:max-w-none">
+        <div class="absolute -top-4 -left-4 z-20 bg-slate-900/90 border border-amber-500/50 px-3 py-1.5 rounded-xl font-mono text-xs text-amber-300 shadow-xl backdrop-blur-md flex items-center space-x-2 animate-float">
+          <span class="font-pixel text-[10px] text-amber-400">+120 XP</span>
+          <span>ACHIEVED</span>
+        </div>
+
+        <div class="absolute -bottom-4 -right-4 z-20 bg-slate-900/90 border border-cyan-500/50 px-3 py-1.5 rounded-xl font-mono text-xs text-cyan-300 shadow-xl backdrop-blur-md flex items-center space-x-2 animate-float-delayed">
+          <span>LEVEL</span>
+          <span class="font-pixel text-[10px] text-cyan-400">8 MASTER</span>
+        </div>
+
+        <div class="relative rounded-2xl overflow-hidden border border-indigo-500/40 bg-slate-950 shadow-2xl shadow-indigo-950/80">
+          <div class="bg-slate-900 px-4 py-3 border-b border-slate-800 flex items-center justify-between text-xs font-mono">
+            <div class="flex items-center space-x-2">
+              <span class="w-3 h-3 rounded-full bg-rose-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-amber-500/80"></span>
+              <span class="w-3 h-3 rounded-full bg-emerald-500/80"></span>
+              <span class="ml-2 text-slate-400 text-[11px]">eduadapt.game/world/shape-island</span>
+            </div>
+            <span class="text-cyan-400 font-pixel text-[9px] bg-indigo-950 px-2 py-0.5 rounded border border-indigo-800">82% MASTERY</span>
+          </div>
+
+          <div class="relative aspect-video sm:aspect-[4/3] w-full overflow-hidden bg-slate-950">
+            <canvas id="hero-game-canvas" class="w-full h-full block pixel-crisp"></canvas>
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-indigo-950/20 pointer-events-none"></div>
+
+            <div class="absolute top-4 left-4 right-4 flex items-center justify-between text-[11px] font-mono pointer-events-none">
+              <div class="bg-slate-900/85 backdrop-blur-md px-3 py-1 rounded-lg border border-slate-700/60 text-slate-300">
+                Difficulty: <strong class="text-amber-400">Medium</strong>
+              </div>
+              <div class="bg-slate-900/85 backdrop-blur-md px-3 py-1 rounded-lg border border-slate-700/60 text-emerald-400 font-pixel text-[9px]">
+                BADGE UNLOCKED!
+              </div>
+            </div>
+
+            <div class="absolute bottom-4 left-4 right-4 flex items-center justify-between bg-slate-900/90 backdrop-blur-md p-3 rounded-xl border border-slate-700/60">
+              <div class="text-xs font-mono">
+                <span class="text-slate-400 block text-[10px]">CURRENT OBJECTIVE</span>
+                <span class="text-white font-bold">Island 4: Polynomial Portal</span>
+              </div>
+              <button onclick="triggerHeroGameStep()" class="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-mono text-xs rounded-lg shadow-md hover:scale-105 transition-all">
+                Next Challenge →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Marquee Banner -->
+  <div class="w-full bg-indigo-900/30 border-y border-indigo-500/20 py-4 overflow-hidden relative z-10">
+    <div class="flex whitespace-nowrap animate-marquee space-x-8 text-sm font-mono font-medium text-indigo-400">
+      <span>★ Personalized Learning</span><span>•</span><span>Curriculum Grounded</span><span>•</span><span>AI-Generated Learning Games</span><span>•</span><span>Adaptive Difficulty</span><span>•</span><span>Progress Analytics</span><span>•</span><span>Gamified Learning</span><span>•</span><span>★ Personalized Learning</span><span>•</span><span>Curriculum Grounded</span><span>•</span><span>AI-Generated Learning Games</span><span>•</span><span>Adaptive Difficulty</span><span>•</span><span>Progress Analytics</span><span>•</span><span>Gamified Learning</span>
+    </div>
+  </div>
+
+  <section id="about" class="py-24 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto space-y-4">
+        <h2 class="text-xs font-mono font-bold text-indigo-500 uppercase tracking-wider">The Adaptive Philosophy</h2>
+        <p class="text-3xl sm:text-4xl font-extrabold text-current">Education Shouldn't Be One-Size-Fits-All.</p>
+        <p class="text-current opacity-80 leading-relaxed">
+          Learners progress at different speeds with unique strengths. EduAdapt responds dynamically to student performance in real time while keeping every learning objective curriculum-aligned.
+        </p>
+      </div>
+
+      <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="glass-card rounded-2xl p-6 hover:border-emerald-500/50 transition-all hover:-translate-y-1">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 px-3 py-1 rounded-full">Fast Mastery</span>
+            <span class="font-pixel text-[10px] opacity-60">STUDENT A</span>
+          </div>
+          <h3 class="text-lg font-bold text-current mb-2">Direct Challenge Pathway</h3>
+          <p class="text-xs opacity-80 mb-6">Demonstrates rapid understanding and bypasses repetitive practice directly to complex scenarios.</p>
+          <div class="space-y-3 font-mono text-xs">
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center justify-between text-slate-200">
+              <span>1. Easy Challenge</span> <span class="text-emerald-400">✓ Pass</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center justify-between text-indigo-300">
+              <span>2. Medium Application</span> <span class="text-emerald-400">✓ Pass</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-indigo-500/40 flex items-center justify-between text-purple-300">
+              <span>3. Hard Complex Task</span> <span class="text-amber-400">★ Unlocked</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 hover:border-purple-500/50 transition-all hover:-translate-y-1">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono bg-purple-500/10 text-purple-500 border border-purple-500/30 px-3 py-1 rounded-full">Guided Path</span>
+            <span class="font-pixel text-[10px] opacity-60">STUDENT B</span>
+          </div>
+          <h3 class="text-lg font-bold text-current mb-2">Scaffolded Reinforcement</h3>
+          <p class="text-xs opacity-80 mb-6">Receives hints and targeted reinforcement mini-games after detecting initial difficulty.</p>
+          <div class="space-y-3 font-mono text-xs">
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center justify-between text-slate-200">
+              <span>1. Easy Challenge</span> <span class="text-amber-400">! Retry</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-purple-500/40 flex items-center justify-between text-cyan-300">
+              <span>2. Hint Reinforcement</span> <span class="text-emerald-400">✓ Cleared</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center justify-between text-indigo-300">
+              <span>3. Medium Difficulty</span> <span class="opacity-60">Next Step</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 hover:border-cyan-500/50 transition-all hover:-translate-y-1">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono bg-cyan-500/10 text-cyan-500 border border-cyan-500/30 px-3 py-1 rounded-full">Deep Revision</span>
+            <span class="font-pixel text-[10px] opacity-60">STUDENT C</span>
+          </div>
+          <h3 class="text-lg font-bold text-current mb-2">Revision & Consolidation</h3>
+          <p class="text-xs opacity-80 mb-6">Revisits foundational prerequisite concepts before progressing back to core tasks.</p>
+          <div class="space-y-3 font-mono text-xs">
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center justify-between text-slate-200">
+              <span>1. Assessment Task</span> <span class="text-rose-400">Gap Found</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-cyan-500/40 flex items-center justify-between text-amber-300">
+              <span>2. Core Revision Quest</span> <span class="text-emerald-400">✓ Mastered</span>
+            </div>
+            <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-700/50 flex items-center justify-between text-indigo-300">
+              <span>3. Advanced Quest</span> <span class="opacity-60">Unlocked</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Step Loop -->
+  <section id="how-it-works" class="py-24 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto space-y-4 mb-20">
+        <h2 class="text-xs font-mono font-bold text-cyan-500 uppercase tracking-wider">Continuous Intelligence Loop</h2>
+        <p class="text-3xl sm:text-4xl font-extrabold text-current">How EduAdapt Works</p>
+        <p class="text-current opacity-80">From curriculum goals to dynamic adaptive game worlds in 6 connected steps.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative">
+        <div class="glass-card rounded-2xl p-6 relative group hover:border-indigo-500/50 transition-all">
+          <div class="w-12 h-12 rounded-xl bg-indigo-600/20 text-indigo-500 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">1</div>
+          <h3 class="text-lg font-bold text-current mb-2">Curriculum Grounding</h3>
+          <p class="text-sm opacity-80">Approved syllabus standard defines target learning outcomes and competencies required for the lesson.</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 relative group hover:border-indigo-500/50 transition-all">
+          <div class="w-12 h-12 rounded-xl bg-purple-600/20 text-purple-500 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">2</div>
+          <h3 class="text-lg font-bold text-current mb-2">AI Learning Experience</h3>
+          <p class="text-sm opacity-80">Curriculum concepts are transformed into interactive, pixel-based educational quests and challenges.</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 relative group hover:border-indigo-500/50 transition-all">
+          <div class="w-12 h-12 rounded-xl bg-cyan-600/20 text-cyan-500 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">3</div>
+          <h3 class="text-lg font-bold text-current mb-2">Student Interaction</h3>
+          <p class="text-sm opacity-80">Students explore environments, solve problems, answer questions, and apply concepts actively.</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 relative group hover:border-indigo-500/50 transition-all">
+          <div class="w-12 h-12 rounded-xl bg-amber-600/20 text-amber-500 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">4</div>
+          <h3 class="text-lg font-bold text-current mb-2">Learning Signals Captured</h3>
+          <p class="text-sm opacity-80">System measures accuracy, attempt frequency, response latency, hint requests, and mistake patterns.</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 relative group hover:border-indigo-500/50 transition-all">
+          <div class="w-12 h-12 rounded-xl bg-emerald-600/20 text-emerald-500 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">5</div>
+          <h3 class="text-lg font-bold text-current mb-2">Adaptive Engine Analysis</h3>
+          <p class="text-sm opacity-80">EduAdapt evaluates topic mastery vs. knowledge gaps to formulate the optimal next cognitive step.</p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-6 relative group hover:border-indigo-500/50 transition-all">
+          <div class="w-12 h-12 rounded-xl bg-pink-600/20 text-pink-500 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-110 transition-transform">6</div>
+          <h3 class="text-lg font-bold text-current mb-2">Personalized Next Step</h3>
+          <p class="text-sm opacity-80">Delivers tailored reinforcement, revision mini-games, or advanced challenges immediately.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="py-24 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
+        <h2 class="text-xs font-mono font-bold text-indigo-500 uppercase tracking-wider">Capabilities</h2>
+        <p class="text-3xl sm:text-4xl font-extrabold text-current">Everything Needed for Adaptive Learning</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="glass-card rounded-xl p-6 hover:border-indigo-500/40 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-4">⚡</div>
+          <h3 class="font-bold text-current mb-2">Adaptive Learning</h3>
+          <p class="text-xs opacity-80">Real-time pacing and difficulty adjustment based on student performance metrics.</p>
+        </div>
+
+        <div class="glass-card rounded-xl p-6 hover:border-indigo-500/40 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-purple-500/10 text-purple-500 flex items-center justify-center mb-4">🎮</div>
+          <h3 class="font-bold text-current mb-2">AI-Generated Games</h3>
+          <p class="text-xs opacity-80">Interactive quests synthesized from textbook concepts to boost engagement.</p>
+        </div>
+
+        <div class="glass-card rounded-xl p-6 hover:border-indigo-500/40 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">📚</div>
+          <h3 class="font-bold text-current mb-2">Curriculum-Grounded</h3>
+          <p class="text-xs opacity-80">Ensures learning alignment with official educational board guidelines.</p>
+        </div>
+
+        <div class="glass-card rounded-xl p-6 hover:border-indigo-500/40 transition-all">
+          <div class="w-10 h-10 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4">🔍</div>
+          <h3 class="font-bold text-current mb-2">Knowledge Gap Detection</h3>
+          <p class="text-xs opacity-80">Pinpoints specific misconception roots before they compound into bigger issues.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Sandbox -->
+  <section id="game-experience" class="py-24 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
+        <h2 class="text-xs font-mono font-bold text-emerald-500 uppercase tracking-wider">Interactive Sandbox Demo</h2>
+        <p class="text-3xl sm:text-4xl font-extrabold text-current">Learn Through Play.</p>
+        <p class="text-current opacity-80">EduAdapt transforms learning objectives into interactive challenges.</p>
+      </div>
+
+      <div class="max-w-4xl mx-auto rounded-2xl border border-indigo-500/40 bg-slate-950 shadow-2xl overflow-hidden text-slate-100">
+        <div class="bg-slate-900 p-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center space-x-3">
+            <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div>
+              <span class="text-xs font-mono text-slate-400">TOPIC: <strong class="text-white">Shapes Around Us</strong></span>
+              <span class="ml-3 text-xs font-mono text-indigo-400">MISSION: <strong class="text-cyan-300">Explore Shape City</strong></span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4 text-xs font-mono">
+            <span class="bg-indigo-950 px-2.5 py-1 rounded border border-indigo-800 text-amber-400 font-pixel text-[10px]">DIFFICULTY: MEDIUM</span>
+            <span class="text-slate-300">XP: <strong id="game-xp" class="text-amber-400 font-pixel">850</strong></span>
+          </div>
+        </div>
+
+        <div class="relative p-8 bg-slate-950 min-h-[280px] flex flex-col items-center justify-center text-center">
+          <div class="relative z-10 max-w-md space-y-4">
+            <div class="font-pixel text-xs text-amber-400 tracking-wide">MISSION CHALLENGE 3/5</div>
+            <h3 class="text-xl font-extrabold text-white">Identify the 3D Prism in Shape City!</h3>
+            <p class="text-xs text-slate-300">Click on the correct geometric element below to earn XP and unlock the next city sector portal.</p>
+
+            <div class="pt-4 flex items-center justify-center space-x-4">
+              <button onclick="playGameChallenge('cylinder')" class="px-4 py-3 bg-slate-900 border border-slate-700 hover:border-indigo-500 rounded-xl flex flex-col items-center space-y-2 hover:scale-105 transition-all">
+                <div class="w-8 h-8 rounded bg-indigo-500/20 text-indigo-400 flex items-center justify-center">⬡</div>
+                <span class="text-xs font-mono text-slate-300">Cylinder</span>
+              </button>
+
+              <button onclick="playGameChallenge('prism')" class="px-4 py-3 bg-slate-900 border border-indigo-500/80 bg-indigo-950/40 hover:border-emerald-500 rounded-xl flex flex-col items-center space-y-2 hover:scale-105 transition-all">
+                <div class="w-8 h-8 rounded bg-emerald-500/20 text-emerald-400 flex items-center justify-center">▲</div>
+                <span class="text-xs font-mono text-emerald-300 font-bold">Triangular Prism</span>
+              </button>
+
+              <button onclick="playGameChallenge('sphere')" class="px-4 py-3 bg-slate-900 border border-slate-700 hover:border-indigo-500 rounded-xl flex flex-col items-center space-y-2 hover:scale-105 transition-all">
+                <div class="w-8 h-8 rounded bg-purple-500/20 text-purple-400 flex items-center justify-center">●</div>
+                <span class="text-xs font-mono text-slate-300">Sphere</span>
+              </button>
+            </div>
+          </div>
+          <div id="game-feedback" class="mt-6 text-xs font-mono min-h-[20px] text-cyan-300"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="roles" class="py-24 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto space-y-4 mb-12">
+        <h2 class="text-xs font-mono font-bold text-indigo-500 uppercase tracking-wider">Multi-User Ecosystem</h2>
+        <p class="text-3xl sm:text-4xl font-extrabold text-current">One Platform. Three Experiences.</p>
+      </div>
+
+      <div class="flex justify-center mb-12">
+        <div class="glass-card p-1.5 rounded-xl border border-indigo-500/30 flex space-x-2">
+          <button onclick="switchRole('admin')" id="tab-admin" class="px-6 py-2.5 rounded-lg text-xs font-mono font-bold transition-all bg-cyan-600 text-white shadow">ADMIN</button>
+          <button onclick="switchRole('teacher')" id="tab-teacher" class="px-6 py-2.5 rounded-lg text-xs font-mono font-bold transition-all opacity-60 hover:opacity-100">TEACHER</button>
+          <button onclick="switchRole('student')" id="tab-student" class="px-6 py-2.5 rounded-lg text-xs font-mono font-bold transition-all opacity-60 hover:opacity-100">STUDENT</button>
+        </div>
+      </div>
+
+      <div class="max-w-4xl mx-auto">
+        <div id="role-admin" class="glass-card rounded-2xl p-8 border-cyan-500/40">
+          <div class="flex items-center space-x-3 mb-6">
+            <span class="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 font-pixel text-xs">🏛 ADMIN MANAGEMENT</span>
+          </div>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm opacity-80 mb-8">
+            <li>• School & Class Structural Management</li>
+            <li>• School Code Generation & Onboarding</li>
+            <li>• Institutional Usage & Adoption Analytics</li>
+            <li>• User Access & Governance Oversight</li>
+          </ul>
+          <button onclick="openAuthModalWithRole('admin')" class="px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-colors">Launch Admin Access</button>
+        </div>
+
+        <div id="role-teacher" class="hidden glass-card rounded-2xl p-8 border-purple-500/40">
+          <div class="flex items-center space-x-3 mb-6">
+            <span class="p-2 rounded-lg bg-purple-500/20 text-purple-400 font-pixel text-xs">📊 TEACHER DASHBOARD</span>
+          </div>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm opacity-80 mb-8">
+            <li>• Subject & Class Teacher Registration</li>
+            <li>• Automated Class Teacher Code Generation</li>
+            <li>• Knowledge Gap & Misconception Tracking</li>
+            <li>• Real-time Live Class Progress Stats</li>
+          </ul>
+          <button onclick="openAuthModalWithRole('teacher')" class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors">Launch Teacher Access</button>
+        </div>
+
+        <div id="role-student" class="hidden glass-card rounded-2xl p-8 border-indigo-500/40">
+          <div class="flex items-center space-x-3 mb-6">
+            <span class="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 font-pixel text-xs">🎮 STUDENT EXPERIENCE</span>
+          </div>
+          <ul class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm opacity-80 mb-8">
+            <li>• Joined via School Code & Class Teacher Code</li>
+            <li>• Gamified Learning Quests & Badges</li>
+            <li>• Adaptive Pacing & Personal Recommendations</li>
+            <li>• XP Rewards & Peer Skill Leaderboards</li>
+          </ul>
+          <button onclick="openAuthModalWithRole('student')" class="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors">Launch Student Access</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team Section -->
+  <section id="developers" class="py-24 relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto space-y-4 mb-16">
+        <h2 class="text-xs font-mono font-bold text-indigo-500 uppercase tracking-wider">Engineering Team</h2>
+        <p class="text-3xl sm:text-4xl font-extrabold text-current">Meet the Team Behind EduAdapt</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="glass-card rounded-2xl p-6 text-center space-y-4">
+          <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5 flex items-center justify-center text-xl font-bold text-white">RJ</div>
+          <div><h3 class="font-bold text-current">Ritika S. Joshi</h3><p class="text-xs text-indigo-500 font-mono">Developer</p></div>
+        </div>
+        <div class="glass-card rounded-2xl p-6 text-center space-y-4">
+          <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-0.5 flex items-center justify-center text-xl font-bold text-white">MM</div>
+          <div><h3 class="font-bold text-current">Megha Manoj</h3><p class="text-xs text-purple-500 font-mono">Developer</p></div>
+        </div>
+        <div class="glass-card rounded-2xl p-6 text-center space-y-4">
+          <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-cyan-500 to-indigo-500 p-0.5 flex items-center justify-center text-xl font-bold text-white">KM</div>
+          <div><h3 class="font-bold text-current">Krupa R. More</h3><p class="text-xs text-cyan-500 font-mono">Developer</p></div>
+        </div>
+        <div class="glass-card rounded-2xl p-6 text-center space-y-4">
+          <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-emerald-500 to-cyan-500 p-0.5 flex items-center justify-center text-xl font-bold text-white">JP</div>
+          <div><h3 class="font-bold text-current">Janhavi Patil</h3><p class="text-xs text-emerald-500 font-mono">Developer</p></div>
+        </div>
+      </div>
+
+      <div class="mt-12 max-w-2xl mx-auto glass-card rounded-xl p-6 text-center space-y-2">
+        <span class="text-xs font-mono text-indigo-500 uppercase tracking-widest">Academic Project</span>
+        <h4 class="text-base font-bold text-current">Pillai College of Engineering (Autonomous)</h4>
+        <p class="text-xs opacity-80">B.Tech Computer Science & Engineering • Artificial Intelligence & Data Science</p>
+        <p class="text-xs opacity-60 pt-1 font-mono">Project Supervisor: <strong class="opacity-100">Dr. Soumya S. Mohapatra</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-slate-950 border-t border-slate-800 py-12 text-slate-400 text-xs relative z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:flex justify-between items-center space-y-4 sm:space-y-0">
+      <p>© 2026 EduAdapt. All rights reserved.</p>
+      <p class="font-mono">Pillai College of Engineering (Autonomous)</p>
+    </div>
+  </footer>
+
+
+  <!-- MULTI-ROLE LOGIN / SIGN-UP AUTHENTICATION PORTAL MODAL -->
+  <div id="auth-modal" class="fixed inset-0 z-50 hidden overflow-y-auto modal-backdrop flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
+    <div class="relative w-full max-w-6xl glass-card rounded-3xl p-6 sm:p-8 shadow-2xl border border-indigo-500/40 my-6 overflow-hidden">
+      
+      <!-- Modal Top Navigation Bar -->
+      <div class="flex items-center justify-between pb-6 border-b border-indigo-500/20">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-0.5 flex items-center justify-center">
+            <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+              <svg class="w-5 h-5 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z"/></svg>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-xl font-black text-current tracking-tight">EDU<span class="text-indigo-500">ADAPT</span> Auth Portal</h3>
+            <p class="text-xs text-slate-400 font-mono">Multi-Role Registration & Login Governance</p>
+          </div>
+        </div>
+
+        <button onclick="closeAuthModal()" class="p-2 rounded-xl border border-indigo-500/20 bg-indigo-950/40 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- HORIZONTAL 3-BLOCK ROLE SELECTION ROW -->
+      <div id="auth-role-blocks-container" class="pt-6 space-y-6">
+        <div class="text-center max-w-xl mx-auto space-y-1">
+          <h2 class="text-2xl font-black text-current">Select Your Account Type</h2>
+          <p class="text-xs text-slate-400">Choose your institution role to open the corresponding registration or login portal.</p>
+        </div>
+
+        <!-- 3 Horizontal Blocks Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          
+          <!-- BLOCK 1: ADMIN -->
+          <div class="glass-card rounded-2xl p-6 border-cyan-500/30 hover:border-cyan-500 flex flex-col justify-between space-y-6 transition-all group">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="p-2 rounded-lg bg-cyan-500/20 text-cyan-400 font-pixel text-[10px]">🏛 ADMIN</span>
+                <span class="text-[10px] font-mono text-cyan-400/80 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800">INSTITUTION</span>
+              </div>
+              <h3 class="text-lg font-black text-current group-hover:text-cyan-400 transition-colors">System Administrator</h3>
+              <p class="text-xs opacity-80 leading-relaxed">Create institution accounts, generate School Codes, and govern system access.</p>
+            </div>
+
+            <div class="space-y-2 pt-2">
+              <button onclick="openRoleForm('admin', 'login')" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition-all flex items-center justify-center space-x-2">
+                <span>Login as Admin</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </button>
+              <button onclick="openRoleForm('admin', 'signup')" class="w-full py-2.5 rounded-xl border border-cyan-500/40 hover:bg-cyan-500/10 text-cyan-300 font-semibold text-xs transition-colors">
+                Register Institution (Admin)
+              </button>
+            </div>
+          </div>
+
+          <!-- BLOCK 2: TEACHER -->
+          <div class="glass-card rounded-2xl p-6 border-purple-500/30 hover:border-purple-500 flex flex-col justify-between space-y-6 transition-all group">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="p-2 rounded-lg bg-purple-500/20 text-purple-400 font-pixel text-[10px]">📊 TEACHER</span>
+                <span class="text-[10px] font-mono text-purple-400/80 bg-purple-950/60 px-2 py-0.5 rounded border border-purple-800">FACULTY</span>
+              </div>
+              <h3 class="text-lg font-black text-current group-hover:text-purple-400 transition-colors">Faculty / Educator</h3>
+              <p class="text-xs opacity-80 leading-relaxed">Register as Subject or Class Teacher, receive Class Codes, and monitor progress.</p>
+            </div>
+
+            <div class="space-y-2 pt-2">
+              <button onclick="openRoleForm('teacher', 'login')" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-all flex items-center justify-center space-x-2">
+                <span>Login as Teacher</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </button>
+              <button onclick="openRoleForm('teacher', 'signup')" class="w-full py-2.5 rounded-xl border border-purple-500/40 hover:bg-purple-500/10 text-purple-300 font-semibold text-xs transition-colors">
+                Register Faculty (Teacher)
+              </button>
+            </div>
+          </div>
+
+          <!-- BLOCK 3: STUDENT -->
+          <div class="glass-card rounded-2xl p-6 border-indigo-500/40 hover:border-indigo-500 flex flex-col justify-between space-y-6 transition-all group">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="p-2 rounded-lg bg-indigo-500/20 text-indigo-400 font-pixel text-[10px]">🎮 STUDENT</span>
+                <span class="text-[10px] font-mono text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">LEARNER</span>
+              </div>
+              <h3 class="text-lg font-black text-current group-hover:text-indigo-400 transition-colors">Student Learner</h3>
+              <p class="text-xs opacity-80 leading-relaxed">Onboard using School Code & Class Teacher Code to unlock adaptive game quests.</p>
+            </div>
+
+            <div class="space-y-2 pt-2">
+              <button onclick="openRoleForm('student', 'login')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-all flex items-center justify-center space-x-2">
+                <span>Login as Student</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </button>
+              <button onclick="openRoleForm('student', 'signup')" class="w-full py-2.5 rounded-xl border border-indigo-500/40 hover:bg-indigo-500/10 text-indigo-300 font-semibold text-xs transition-colors">
+                Create Student Account
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- DYNAMIC ROLE FORM VIEW CONTAINER -->
+      <div id="auth-form-container" class="hidden pt-4 max-w-xl mx-auto space-y-5">
+        
+        <div class="flex items-center justify-between pb-2 border-b border-indigo-500/20">
+          <button onclick="backToRoleBlocks()" class="text-xs font-mono text-indigo-400 hover:text-indigo-300 flex items-center space-x-1">
+            <span>← Back to Role Selection</span>
+          </button>
+          
+          <div id="active-role-badge" class="px-3 py-1 rounded-full text-xs font-mono font-bold border"></div>
+        </div>
+
+        <!-- Mode Switcher (Login vs Sign Up) -->
+        <div class="glass-card p-1 rounded-xl border border-indigo-500/30 flex text-xs font-mono">
+          <button id="btn-mode-login" onclick="toggleFormMode('login')" class="w-1/2 py-2 rounded-lg font-bold transition-all">LOGIN</button>
+          <button id="btn-mode-signup" onclick="toggleFormMode('signup')" class="w-1/2 py-2 rounded-lg font-bold transition-all">REGISTER / SIGN UP</button>
+        </div>
+
+        <div id="form-feedback-msg" class="hidden p-3 rounded-xl text-xs font-mono border"></div>
+
+        <!-- 1. ADMIN FORM -->
+        <form id="admin-form" class="auth-role-form hidden space-y-4" onsubmit="handleAdminAuth(event)">
+          <div id="admin-signup-fields" class="space-y-4">
+            <div class="space-y-1">
+              <label class="block text-xs font-mono text-slate-400 uppercase">Admin Full Name</label>
+              <input type="text" id="admin-name" placeholder="System Admin" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-mono text-slate-400 uppercase">Institution / School Name</label>
+              <input type="text" id="institution-name" placeholder="Pillai College of Engineering" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-mono text-slate-400 uppercase">Admin Email</label>
+            <input type="email" id="admin-email" required placeholder="admin@school.edu" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-mono text-slate-400 uppercase">Password</label>
+            <input type="password" id="admin-password" required minlength="6" placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+          </div>
+
+          <button type="submit" id="admin-submit-btn" class="w-full py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow-lg transition-all">
+            SUBMIT
+          </button>
+        </form>
+
+        <!-- 2. TEACHER FORM -->
+        <form id="teacher-form" class="auth-role-form hidden space-y-4" onsubmit="handleTeacherAuth(event)">
+          <div id="teacher-signup-fields" class="space-y-4">
+            <div class="space-y-1">
+              <label class="block text-xs font-mono text-slate-400 uppercase">Full Name</label>
+              <input type="text" id="teacher-name" placeholder="Prof. Smith" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-mono text-slate-400 uppercase">School Code</label>
+              <input type="text" id="school-code" placeholder="EDUA-ABC123" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+            </div>
+            <div class="space-y-1">
+              <label class="block text-xs font-mono text-slate-400 uppercase">Teacher Type</label>
+              <select id="teacher-type" onchange="toggleClassTeacherFields()" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+                <option value="">Select Teacher Type</option>
+                <option value="subject">Subject / Regular Teacher</option>
+                <option value="class">Class Teacher</option>
+              </select>
+            </div>
+
+            <div id="class-teacher-fields" class="hidden space-y-4 bg-purple-950/20 p-4 rounded-xl border border-purple-500/30">
+              <div class="space-y-1">
+                <label class="block text-xs font-mono text-purple-300 uppercase">Grade / Class</label>
+                <input type="text" id="teacher-grade" placeholder="8" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+              </div>
+              <div class="space-y-1">
+                <label class="block text-xs font-mono text-purple-300 uppercase">Section / Division</label>
+                <input type="text" id="teacher-section" placeholder="A" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-mono text-slate-400 uppercase">Faculty Email</label>
+            <input type="email" id="teacher-email" required placeholder="faculty@school.edu" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-mono text-slate-400 uppercase">Password</label>
+            <input type="password" id="teacher-password" required minlength="6" placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+          </div>
+
+          <button type="submit" id="teacher-submit-btn" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-lg transition-all">
+            SUBMIT
+          </button>
+        </form>
+
+        <!-- 3. STUDENT FORM -->
+        <form id="student-form" class="auth-role-form hidden space-y-4" onsubmit="handleStudentAuth(event)">
+          <div id="student-signup-fields" class="space-y-4">
+            <div class="space-y-1">
+              <label class="block text-xs font-mono text-slate-400 uppercase">Full Name</label>
+              <input type="text" id="s-name" placeholder="Ritika Joshi" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-xs font-mono text-slate-400 uppercase">School Code</label>
+                <input type="text" id="s-school-code" placeholder="EDUA-ABC123" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+              </div>
+              <div class="space-y-1">
+                <label class="block text-xs font-mono text-slate-400 uppercase">Class Teacher Code</label>
+                <input type="text" id="s-class-teacher-code" placeholder="7A-ABC123" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="space-y-1">
+                <label class="block text-xs font-mono text-slate-400 uppercase">Grade / Class</label>
+                <input type="text" id="s-grade" placeholder="7" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+              </div>
+              <div class="space-y-1">
+                <label class="block text-xs font-mono text-slate-400 uppercase">Section / Division</label>
+                <input type="text" id="s-section" placeholder="A" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-mono text-slate-400 uppercase">Email Address</label>
+            <input type="email" id="s-email" required placeholder="student@school.edu" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+          </div>
+
+          <div class="space-y-1">
+            <label class="block text-xs font-mono text-slate-400 uppercase">Password</label>
+            <input type="password" id="s-pass" required minlength="6" placeholder="••••••••" class="w-full px-4 py-2.5 rounded-xl edu-input text-sm">
+          </div>
+
+          <button type="submit" id="student-submit-btn" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg transition-all">
+            SUBMIT
+          </button>
+        </form>
+
+        <!-- GENERATED CODES SUCCESS OVERLAYS -->
+        <!-- ADMIN SUCCESS CODE OVERLAY -->
+        <div id="school-code-container" class="hidden glass-card p-6 rounded-2xl border border-cyan-500/50 text-center space-y-4">
+          <p class="text-xs font-mono text-cyan-300 font-bold uppercase">YOUR GENERATED SCHOOL CODE</p>
+          <h2 id="generated-school-code" class="text-2xl font-pixel text-amber-400 bg-slate-900 py-3 rounded-xl border border-slate-700 tracking-wider"></h2>
+          <p class="text-xs opacity-80">Save this code. Teachers and students will use it to join your institution.</p>
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button type="button" onclick="copySchoolCode()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono border border-slate-600">COPY SCHOOL CODE</button>
+            <button type="button" onclick="finishAuthAndClose('Admin')" class="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold">CONTINUE TO DASHBOARD</button>
+          </div>
+        </div>
+
+        <!-- TEACHER SUCCESS CLASS CODE OVERLAY -->
+        <div id="class-code-container" class="hidden glass-card p-6 rounded-2xl border border-purple-500/50 text-center space-y-4">
+          <p class="text-xs font-mono text-purple-300 font-bold uppercase">YOUR CLASS TEACHER CODE</p>
+          <h2 id="generated-class-code" class="text-2xl font-pixel text-amber-400 bg-slate-900 py-3 rounded-xl border border-slate-700 tracking-wider"></h2>
+          <p id="generated-class-info" class="text-xs font-mono text-cyan-300"></p>
+          <p class="text-xs opacity-80">Share this code only with students belonging to your class section.</p>
+          <div class="flex flex-col sm:flex-row gap-3 pt-2">
+            <button type="button" onclick="copyClassTeacherCode()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-mono border border-slate-600">COPY CLASS CODE</button>
+            <button type="button" onclick="finishAuthAndClose('Teacher')" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold">CONTINUE TO DASHBOARD</button>
+          </div>
+        </div>
+
+        <!-- NORMAL TEACHER SUCCESS OVERLAY -->
+        <div id="normal-teacher-success" class="hidden glass-card p-6 rounded-2xl border border-purple-500/50 text-center space-y-4">
+          <div class="text-3xl">🎉</div>
+          <h3 class="text-base font-bold">Teacher Account Registered Successfully</h3>
+          <p class="text-xs opacity-80">Your faculty credentials have been initialized under your school code.</p>
+          <button type="button" onclick="finishAuthAndClose('Teacher')" class="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold">CONTINUE TO DASHBOARD</button>
+        </div>
+
+        <!-- STUDENT SUCCESS OVERLAY -->
+        <div id="student-success-container" class="hidden glass-card p-6 rounded-2xl border border-indigo-500/50 text-center space-y-4">
+          <div class="text-3xl">🎒</div>
+          <h3 class="text-base font-bold">Student Account Initialized</h3>
+          <p id="student-class-info" class="text-xs font-mono text-cyan-300"></p>
+          <p id="student-teacher-info" class="text-xs font-mono text-amber-300"></p>
+          <button type="button" onclick="finishAuthAndClose('Student')" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold">START LEARNING QUESTS</button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+
+  <script>
+    // Theme Engine
+    function toggleTheme() {
+      const isLight = document.body.classList.toggle('light-mode');
+      const htmlEl = document.documentElement;
+
+      if (isLight) {
+        htmlEl.classList.remove('dark');
+        document.getElementById('theme-icon-sun')?.classList.add('hidden');
+        document.getElementById('theme-icon-moon')?.classList.remove('hidden');
+        document.getElementById('theme-icon-sun-mob')?.classList.add('hidden');
+        document.getElementById('theme-icon-moon-mob')?.classList.remove('hidden');
+        localStorage.setItem('eduadapt_theme', 'light');
+      } else {
+        htmlEl.classList.add('dark');
+        document.getElementById('theme-icon-sun')?.classList.remove('hidden');
+        document.getElementById('theme-icon-moon')?.classList.add('hidden');
+        document.getElementById('theme-icon-sun-mob')?.classList.remove('hidden');
+        document.getElementById('theme-icon-moon-mob')?.classList.add('hidden');
+        localStorage.setItem('eduadapt_theme', 'dark');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = localStorage.getItem('eduadapt_theme');
+      if (savedTheme === 'light') toggleTheme();
+    });
+
+    // Mobile Menu
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+        document.getElementById('menu-icon-open').classList.toggle('hidden');
+        document.getElementById('menu-icon-close').classList.toggle('hidden');
+      });
+    }
+
+    // Role Tab Switcher in Ecosystem Section
+    function switchRole(role) {
+      ['admin', 'teacher', 'student'].forEach(r => {
+        document.getElementById(`role-${r}`).classList.add('hidden');
+        const tab = document.getElementById(`tab-${r}`);
+        tab.className = 'px-6 py-2.5 rounded-lg text-xs font-mono font-bold transition-all opacity-60 hover:opacity-100';
+      });
+
+      document.getElementById(`role-${role}`).classList.remove('hidden');
+      const activeTab = document.getElementById(`tab-${role}`);
+      const color = role === 'admin' ? 'bg-cyan-600' : role === 'teacher' ? 'bg-purple-600' : 'bg-indigo-600';
+      activeTab.className = `px-6 py-2.5 rounded-lg text-xs font-mono font-bold transition-all ${color} text-white shadow`;
+    }
+
+    // Interactive Sandbox Challenge
+    let gameXp = 850;
+    function playGameChallenge(shape) {
+      const feedback = document.getElementById('game-feedback');
+      const xpDisplay = document.getElementById('game-xp');
+
+      if (shape === 'prism') {
+        gameXp += 120;
+        feedback.innerHTML = '<span class="text-emerald-400">✓ Correct! Triangular Prism identified! +120 XP gained. Sector portal unlocked!</span>';
+        xpDisplay.innerText = gameXp;
+      } else {
+        feedback.innerHTML = '<span class="text-amber-400">! Not quite a 3D Prism. Request a hint or try another shape option.</span>';
+      }
+    }
+
+
+    // MULTI-ROLE AUTHENTICATION PORTAL SYSTEM
+    let activeAuthRole = 'admin'; // 'admin' | 'teacher' | 'student'
+    let activeAuthMode = 'login';  // 'login' | 'signup'
+
+    function openAuthModal() {
+      document.getElementById('auth-modal').classList.remove('hidden');
+      backToRoleBlocks();
+    }
+
+    function openAuthModalWithRole(role) {
+      document.getElementById('auth-modal').classList.remove('hidden');
+      openRoleForm(role, 'signup');
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.add('hidden');
+      resetAuthDisplays();
+    }
+
+    function backToRoleBlocks() {
+      document.getElementById('auth-role-blocks-container').classList.remove('hidden');
+      document.getElementById('auth-form-container').classList.add('hidden');
+      resetAuthDisplays();
+    }
+
+    function openRoleForm(role, mode) {
+      activeAuthRole = role;
+      activeAuthMode = mode;
+
+      document.getElementById('auth-role-blocks-container').classList.add('hidden');
+      document.getElementById('auth-form-container').classList.remove('hidden');
+
+      updateRoleFormUI();
+    }
+
+    function toggleFormMode(mode) {
+      activeAuthMode = mode;
+      updateRoleFormUI();
+    }
+
+    function toggleClassTeacherFields() {
+      const typeSelect = document.getElementById('teacher-type');
+      const classFields = document.getElementById('class-teacher-fields');
+      if (typeSelect.value === 'class') {
+        classFields.classList.remove('hidden');
+        document.getElementById('teacher-grade').required = true;
+        document.getElementById('teacher-section').required = true;
+      } else {
+        classFields.classList.add('hidden');
+        document.getElementById('teacher-grade').required = false;
+        document.getElementById('teacher-section').required = false;
+      }
+    }
+
+    function updateRoleFormUI() {
+      resetAuthDisplays();
+
+      // Update Role Badge
+      const badge = document.getElementById('active-role-badge');
+      if (activeAuthRole === 'admin') {
+        badge.className = "px-3 py-1 rounded-full text-xs font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-700";
+        badge.innerHTML = "🏛 ADMIN PORTAL";
+      } else if (activeAuthRole === 'teacher') {
+        badge.className = "px-3 py-1 rounded-full text-xs font-mono font-bold bg-purple-950 text-purple-400 border border-purple-700";
+        badge.innerHTML = "📊 TEACHER PORTAL";
+      } else {
+        badge.className = "px-3 py-1 rounded-full text-xs font-mono font-bold bg-indigo-950 text-indigo-400 border border-indigo-700";
+        badge.innerHTML = "🎮 STUDENT PORTAL";
+      }
+
+      // Update Mode Toggle Buttons
+      const btnLogin = document.getElementById('btn-mode-login');
+      const btnSignup = document.getElementById('btn-mode-signup');
+      if (activeAuthMode === 'login') {
+        btnLogin.className = "w-1/2 py-2 rounded-lg font-bold transition-all bg-indigo-600 text-white shadow";
+        btnSignup.className = "w-1/2 py-2 rounded-lg font-bold transition-all opacity-60 hover:opacity-100";
+      } else {
+        btnSignup.className = "w-1/2 py-2 rounded-lg font-bold transition-all bg-indigo-600 text-white shadow";
+        btnLogin.className = "w-1/2 py-2 rounded-lg font-bold transition-all opacity-60 hover:opacity-100";
+      }
+
+      // Hide all forms then show active one
+      document.querySelectorAll('.auth-role-form').forEach(f => f.classList.add('hidden'));
+
+      if (activeAuthRole === 'admin') {
+        const form = document.getElementById('admin-form');
+        form.classList.remove('hidden');
+        document.getElementById('admin-signup-fields').style.display = activeAuthMode === 'signup' ? 'block' : 'none';
+        document.getElementById('admin-name').required = activeAuthMode === 'signup';
+        document.getElementById('institution-name').required = activeAuthMode === 'signup';
+        document.getElementById('admin-submit-btn').innerText = activeAuthMode === 'signup' ? 'CREATE INSTITUTION ACCOUNT' : 'LOGIN TO ADMIN DASHBOARD';
+      } 
+      else if (activeAuthRole === 'teacher') {
+        const form = document.getElementById('teacher-form');
+        form.classList.remove('hidden');
+        document.getElementById('teacher-signup-fields').style.display = activeAuthMode === 'signup' ? 'block' : 'none';
+        document.getElementById('teacher-name').required = activeAuthMode === 'signup';
+        document.getElementById('school-code').required = activeAuthMode === 'signup';
+        document.getElementById('teacher-type').required = activeAuthMode === 'signup';
+        document.getElementById('teacher-submit-btn').innerText = activeAuthMode === 'signup' ? 'REGISTER FACULTY ACCOUNT' : 'LOGIN TO FACULTY DASHBOARD';
+        toggleClassTeacherFields();
+      } 
+      else if (activeAuthRole === 'student') {
+        const form = document.getElementById('student-form');
+        form.classList.remove('hidden');
+        document.getElementById('student-signup-fields').style.display = activeAuthMode === 'signup' ? 'block' : 'none';
+        ['s-name', 's-school-code', 's-class-teacher-code', 's-grade', 's-section'].forEach(id => {
+          document.getElementById(id).required = activeAuthMode === 'signup';
+        });
+        document.getElementById('student-submit-btn').innerText = activeAuthMode === 'signup' ? 'CREATE STUDENT ACCOUNT' : 'LOGIN TO STUDENT DASHBOARD';
+      }
+    }
+
+    function resetAuthDisplays() {
+      document.getElementById('form-feedback-msg').classList.add('hidden');
+      document.getElementById('school-code-container').classList.add('hidden');
+      document.getElementById('class-code-container').classList.add('hidden');
+      document.getElementById('normal-teacher-success').classList.add('hidden');
+      document.getElementById('student-success-container').classList.add('hidden');
+    }
+
+    function showFeedback(msg, isError = false) {
+      const box = document.getElementById('form-feedback-msg');
+      box.classList.remove('hidden');
+      box.className = isError ? "p-3 rounded-xl text-xs font-mono border bg-rose-950/60 border-rose-500/50 text-rose-300" : "p-3 rounded-xl text-xs font-mono border bg-emerald-950/60 border-emerald-500/50 text-emerald-300";
+      box.innerText = msg;
+    }
+
+    // FORM SUBMISSION HANDLERS
+    function handleAdminAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById('admin-email').value;
+
+      if (activeAuthMode === 'login') {
+        showFeedback(`✓ Login authenticated for Admin (${email}). Redirecting...`);
+        setTimeout(() => finishAuthAndClose('Admin'), 1000);
+      } else {
+        const schoolCode = "EDUA-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        document.getElementById('generated-school-code').innerText = schoolCode;
+        document.getElementById('admin-form').classList.add('hidden');
+        document.getElementById('school-code-container').classList.remove('hidden');
+      }
+    }
+
+    function handleTeacherAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById('teacher-email').value;
+
+      if (activeAuthMode === 'login') {
+        showFeedback(`✓ Login authenticated for Faculty (${email}). Redirecting...`);
+        setTimeout(() => finishAuthAndClose('Teacher'), 1000);
+      } else {
+        const type = document.getElementById('teacher-type').value;
+        document.getElementById('teacher-form').classList.add('hidden');
+
+        if (type === 'class') {
+          const grade = document.getElementById('teacher-grade').value;
+          const sec = document.getElementById('teacher-section').value;
+          const classCode = `${grade}${sec}-` + Math.random().toString(36).substring(2, 8).toUpperCase();
+          
+          document.getElementById('generated-class-code').innerText = classCode;
+          document.getElementById('generated-class-info').innerText = `Class Section: Grade ${grade}-${sec}`;
+          document.getElementById('class-code-container').classList.remove('hidden');
+        } else {
+          document.getElementById('normal-teacher-success').classList.remove('hidden');
+        }
+      }
+    }
+
+    function handleStudentAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById('s-email').value;
+
+      if (activeAuthMode === 'login') {
+        showFeedback(`✓ Login authenticated for Student (${email}). Redirecting...`);
+        setTimeout(() => finishAuthAndClose('Student'), 1000);
+      } else {
+        const grade = document.getElementById('s-grade').value;
+        const sec = document.getElementById('s-section').value;
+        const teacherCode = document.getElementById('s-class-teacher-code').value;
+
+        document.getElementById('student-class-info').innerText = `Assigned Class: Grade ${grade}-${sec}`;
+        document.getElementById('student-teacher-info').innerText = `Linked Teacher Code: ${teacherCode}`;
+        
+        document.getElementById('student-form').classList.add('hidden');
+        document.getElementById('student-success-container').classList.remove('hidden');
+      }
+    }
+
+    // CLIPBOARD COPY HELPERS
+    function copySchoolCode() {
+      const code = document.getElementById('generated-school-code').innerText;
+      copyTextToClipboard(code, "School Code");
+    }
+
+    function copyClassTeacherCode() {
+      const code = document.getElementById('generated-class-code').innerText;
+      copyTextToClipboard(code, "Class Teacher Code");
+    }
+
+    function copyTextToClipboard(text, label) {
+      const dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = text;
+      dummy.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummy);
+      alert(`📋 ${label} copied to clipboard: ${text}`);
+    }
+
+    function finishAuthAndClose(role) {
+      closeAuthModal();
+      alert(`🎉 Connected to EduAdapt Workspace as ${role}!`);
+    }
+
+    // CANVAS ANIMATION ENGINE
+    window.onload = function() {
+      initHeroCanvas();
+    };
+
+    function initHeroCanvas() {
+      const canvas = document.getElementById('hero-game-canvas');
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width = 320;
+      const height = canvas.height = 240;
+
+      let time = 0;
+      let playerX = 60;
+
+      function renderScene() {
+        time += 0.04;
+        playerX = 60 + Math.sin(time) * 15;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+        skyGrad.addColorStop(0, '#0f172a');
+        skyGrad.addColorStop(0.6, '#1e1b4b');
+        skyGrad.addColorStop(1, '#311042');
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, width, height);
+
+        for (let i = 0; i < 20; i++) {
+          ctx.fillStyle = i % 2 === 0 ? '#fde047' : '#ffffff';
+          ctx.fillRect((i * 17) % width, (i * 13) % (height * 0.5), 1, 1);
+        }
+
+        // Draw Floating Pixel Islands
+        drawIsland(ctx, 30, 130 + Math.sin(time * 0.8) * 3, 90, 24, '#4f46e5', '#6366f1');
+        drawIsland(ctx, 160, 95 + Math.cos(time * 0.7) * 4, 110, 28, '#7c3aed', '#a855f7');
+
+        // Player Sprite
+        const py = 130 - 12 + Math.sin(time * 0.8) * 3;
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(Math.floor(playerX), Math.floor(py), 8, 12);
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(Math.floor(playerX + 1), Math.floor(py - 6), 6, 6);
+
+        // Collectible Gem
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(200, Math.floor(80 + Math.sin(time * 2) * 4), 6, 6);
+
+        requestAnimationFrame(renderScene);
+      }
+
+      function drawIsland(c, x, y, w, h, base, top) {
+        c.fillStyle = top; c.fillRect(x, y, w, 4);
+        c.fillStyle = base; c.fillRect(x + 2, y + 4, w - 4, h - 8);
+        c.fillStyle = '#1e1b4b'; c.fillRect(x + 6, y + h - 4, w - 12, 4);
+      }
+
+      renderScene();
+    }
+
+    function triggerHeroGameStep() {
+      alert("Advancing to Island 5: Polynomial Portal Module!");
+    }
+  </script>
+</body>
+</html>
+```

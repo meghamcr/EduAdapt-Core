@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/curriculumIngestion/*.test.js tests/prisma/*.test.js tests/curriculumArtifacts/*.test.js tests/gameGeneration/*.test.js tests/adaptiveLearning/*.test.js tests/gameplay/*.test.js tests/runtime/*.test.js tests/learningLoop/*.test.js",
+    "test": "node --test tests/curriculumIngestion/*.test.js tests/prisma/*.test.js tests/curriculumArtifacts/*.test.js tests/gameGeneration/*.test.js tests/adaptiveLearning/*.test.js tests/gameplay/*.test.js tests/runtime/*.test.js tests/learningLoop/*.test.js tests/http/*.test.js tests/curriculumLevels/*.test.js tests/gamePlanning/*.test.js tests/educationalVisuals/*.test.js",
     "test:curriculum": "node --test tests/curriculumIngestion/*.test.js",
     "ingest:curriculum": "node src/services/curriculumIngestion/ingestCurriculum.js",
     "test:prisma": "node --test tests/prisma/*.test.js",
@@ -15,7 +15,10 @@
     "test:game-persistence": "node --test tests/gameGeneration/gamePersistence.test.js",
     "test:gameplay": "node --test tests/gameplay/*.test.js",
     "test:runtime": "node --test tests/runtime/*.test.js",
-    "test:learning-loop": "node --test tests/learningLoop/*.test.js"
+    "test:learning-loop": "node --test tests/learningLoop/*.test.js",
+    "test:runtime-api": "node --test tests/http/*.test.js",
+    "test:levels": "node --test tests/curriculumLevels/*.test.js",
+    "test:game-planning": "node --test tests/gamePlanning/*.test.js tests/learningLoop/levelLearningLoop.test.js"
   },
   "keywords": [],
   "author": "",

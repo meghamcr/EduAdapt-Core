@@ -620,12 +620,26 @@ function validateCurriculum(curriculum) {
     }
   });
 
-  // This is informational only. Examples can correctly live inside
-  // concept content instead of becoming separate nodes.
-  if (explicitExampleOrActivityNodes === 0) {
+  // Count explicit source materials independently of node types. Embedded
+  // activities are valid; quarantined inference/synthesis is not evidence of
+  // preserved learner work. These counts do not establish source completeness.
+  const materialRoles = Object.create(null);
+  let embeddedExampleOrActivityMaterials = 0;
+  const taskRoles = new Set(["question", "activity", "investigation", "worked_example", "exercise", "visual_dependent_task"]);
+  for (const node of curriculum.nodes) {
+    for (const material of Array.isArray(node.materials) ? node.materials : []) {
+      if (material?.authority !== "EXPLICIT_SOURCE_CONTENT" || typeof material.role !== "string") continue;
+      materialRoles[material.role] = (materialRoles[material.role] || 0) + 1;
+      if (taskRoles.has(material.role)) embeddedExampleOrActivityMaterials++;
+    }
+  }
+  if (explicitExampleOrActivityNodes === 0 && embeddedExampleOrActivityMaterials === 0) {
     warnings.push(
       "No standalone example/activity nodes were generated. This is acceptable if examples and activities are preserved inside relevant node content."
     );
+  }
+  if (curriculum.source_context && embeddedExampleOrActivityMaterials === 0) {
+    warnings.push("No explicit source questions, activities, investigations, exercises or worked examples were represented. Compare with the source for possible omissions; some chapters legitimately contain none.");
   }
 
   // ==================================================
@@ -658,7 +672,9 @@ function validateCurriculum(curriculum) {
       nodeTypes:
         typeCounts,
 
-      explicitExampleOrActivityNodes
+      explicitExampleOrActivityNodes,
+      embeddedExampleOrActivityMaterials,
+      materialRoles
     }
   };
 }

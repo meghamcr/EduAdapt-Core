@@ -12,6 +12,7 @@ function progress(state, game) {
     phaseId: game.phases[state.phaseIndex]?.id || null,
     activeChallengeId: state.active?.challengeId || null,
     attempts: state.active?.attempts || 0, hintsUsed: state.active?.hintsUsed || 0,
+    ...(state.active?.placements ? {placements:state.active.placements} : {}),
     resolved: state.resolved.map(c => ({ challengeId: c.challengeId, completed: c.completion, skipped: c.skipped, abandoned: c.abandoned }))
   };
 }
@@ -33,9 +34,10 @@ function projectRuntime(p, session, state) {
     phases: g.phases.map(p => ({ id: p.id, type: p.type, instruction: templates[p.instruction],
       teaching: p.teachingRefs.map(ref => evidence.get(ref)) })),
     challenges: g.challenges.map(c => ({ id: c.id, type: c.type, phaseId: c.phaseId,
-      instruction: templates.SOURCE_CLOZE,
-      prompt: evidence.get(c.prompt.evidenceId).slice(0, c.prompt.start) + '____' + evidence.get(c.prompt.evidenceId).slice(c.prompt.end),
-      choices: [...c.options], hint: c.hint ? templates.REREAD_SOURCE : null, telemetryKey: c.telemetryKey })),
+      ...(c.construction ? {construction:c.construction} : {}),
+      instruction: c.type==='CONSTRUCTION' ? templates.BUILD_MODEL : templates.SOURCE_CLOZE,
+      prompt: c.type==='CONSTRUCTION' ? evidence.get(c.prompt.evidenceId) : evidence.get(c.prompt.evidenceId).slice(0, c.prompt.start) + '____' + evidence.get(c.prompt.evidenceId).slice(c.prompt.end),
+      choices: [...c.options], hint: c.hint ? (c.type==='CONSTRUCTION' ? 'Compare each block with the generated reference. Start with the bottom row; rotate a selected block when needed.' : templates.REREAD_SOURCE) : null, telemetryKey: c.telemetryKey })),
     visuals: { theme: g.visuals.theme, assets: [...g.visuals.assets] },
     reward: { type: g.reward.type, quantity: g.reward.quantity },
     progress: progress(state, g)

@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pixel Academy — Student Dashboard (Refined)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+<style>
+  :root {
+    --bg: #0f0b1e;
+    --panel: rgba(18, 14, 36, 0.78);
+    --panel-solid: #15102a;
+    --border: #000000;
+    --line: #2a2142;
+    --gold: #ffcd38;
+    --gold-deep: #b07c00;
+    --cyan: #29adff;
+    --green: #38b764;
+    --red: #ff3860;
+    --purple: #8b5cf6;
+    --text: #f3efe0;
+    --muted: #a89fbf;
+    --shadow: 4px 4px 0 #000;
+    --shadow-sm: 2px 2px 0 #000;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: var(--text);
+    background: var(--bg);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: none;
+    image-rendering: pixelated;
+  }
+
+  .pixel-font { font-family: 'Press Start 2P', monospace; letter-spacing: 0.05em; }
+  button { font-family: inherit; color: inherit; }
+
+  /* Background engine */
+  #bg-image {
+    position: fixed; inset: 0; z-index: -2;
+    background-image: url('https://customer-assets-4nw71qhi.emergentagent.net/job_c9b43be4-21e1-40b4-89e2-d2a10e572e2d/artifacts/c0cfb6a83d7d8c49_Clearing%20background%201.jpeg');
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+    image-rendering: pixelated; transition: filter 1.2s ease;
+  }
+  #bg-tint {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    transition: background 1.2s ease, opacity 1.2s ease; mix-blend-mode: soft-light;
+  }
+  #bg-vignette {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 30%, transparent 40%, rgba(0,0,0,0.55) 100%);
+  }
+
+  body.mode-morning #bg-image { filter: brightness(1.15) contrast(1.05) saturate(1.1) hue-rotate(-8deg); }
+  body.mode-morning #bg-tint { background: linear-gradient(180deg, rgba(255,210,170,0.45) 0%, rgba(255,180,160,0.15) 60%, rgba(120,200,255,0.0) 100%); opacity: 1; }
+  body.mode-noon #bg-image { filter: brightness(1.25) contrast(1.0) saturate(1.35) hue-rotate(-25deg); }
+  body.mode-noon #bg-tint { background: linear-gradient(180deg, rgba(140,210,255,0.5) 0%, rgba(255,250,200,0.15) 70%, rgba(255,255,255,0.0) 100%); opacity: 1; }
+  body.mode-sunset #bg-image { filter: brightness(1.0) contrast(1.1) saturate(1.3); }
+  body.mode-sunset #bg-tint { background: linear-gradient(180deg, rgba(255,140,100,0.35) 0%, rgba(255,90,160,0.25) 55%, rgba(90,40,120,0.3) 100%); opacity: 1; }
+  body.mode-night #bg-image { filter: brightness(0.4) contrast(1.25) saturate(0.7) hue-rotate(205deg); }
+  body.mode-night #bg-tint { background: linear-gradient(180deg, rgba(10,20,70,0.65) 0%, rgba(5,8,30,0.55) 100%); opacity: 1; mix-blend-mode: normal; }
+
+  /* UI Primitives */
+  .card {
+    background: var(--panel);
+    border: 3px solid var(--border);
+    box-shadow: inset -3px -3px 0 rgba(0,0,0,0.55), inset 3px 3px 0 rgba(255,255,255,0.06), var(--shadow);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    padding: 18px;
+  }
+  .card h3 {
+    margin: 0 0 12px 0; font-family: 'Press Start 2P', monospace; font-size: 11px;
+    color: var(--gold); letter-spacing: 0.08em; display: flex; align-items: center; gap: 8px;
+    padding-bottom: 10px; border-bottom: 2px solid var(--line);
+  }
+  .btn {
+    font-family: 'Press Start 2P', monospace; font-size: 10px; padding: 10px 14px;
+    background: #332649; color: #fff; border: 3px solid #000;
+    box-shadow: inset -2px -2px 0 #1a0f33, inset 2px 2px 0 #574176, var(--shadow-sm);
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; transition: transform 0.08s ease, filter 0.1s ease; text-align: left; letter-spacing: 0.05em;
+  }
+  .btn:hover { transform: translate(-1px, -1px); filter: brightness(1.15); }
+  .btn:active { transform: translate(2px, 2px); box-shadow: inset 2px 2px 0 #1a0f33, inset -2px -2px 0 #574176, 0 0 0 #000; }
+  .btn-gold { background: var(--gold-deep); box-shadow: inset -2px -2px 0 #5c3f00, inset 2px 2px 0 var(--gold), var(--shadow-sm); }
+  .btn-green { background: #1f6b3a; box-shadow: inset -2px -2px 0 #0f3a20, inset 2px 2px 0 var(--green), var(--shadow-sm); }
+  .btn-cyan { background: #125785; box-shadow: inset -2px -2px 0 #082d46, inset 2px 2px 0 var(--cyan), var(--shadow-sm); }
+  .btn-red { background: #8c0024; box-shadow: inset -2px -2px 0 #4a0015, inset 2px 2px 0 var(--red), var(--shadow-sm); }
+  .btn-ghost { background: transparent; border-color: #000; box-shadow: inset -2px -2px 0 rgba(0,0,0,0.6), inset 2px 2px 0 rgba(255,255,255,0.08), var(--shadow-sm); }
+  .btn.full { width: 100%; justify-content: flex-start; }
+
+  .bar { position: relative; height: 14px; background: #0a0618; border: 2px solid #000; box-shadow: inset 2px 2px 0 #000; overflow: hidden; }
+  .bar > span { display: block; height: 100%; transition: width 0.5s ease; }
+  .bar.bar-sm { height: 10px; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px;
+    border: 2px solid #000; background: rgba(0,0,0,0.55);
+    font-family: 'Press Start 2P', monospace; font-size: 9px; letter-spacing: 0.05em;
+  }
+
+  /* Header */
+  header.topbar {
+    position: sticky; top: 0; z-index: 20; background: rgba(10, 7, 22, 0.88);
+    backdrop-filter: blur(10px); border-bottom: 3px solid #000; padding: 12px 18px;
+  }
+  .topbar-inner { max-width: 1400px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  
+  .sidebar-toggle-btn {
+    background: #1f1838; border: 2px solid var(--gold); color: var(--gold);
+    padding: 8px 12px; cursor: pointer; font-size: 14px; box-shadow: var(--shadow-sm);
+  }
+  .sidebar-toggle-btn:hover { background: var(--gold-deep); color: #fff; }
+
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-badge {
+    width: 36px; height: 36px; background: var(--gold); border: 3px solid #000;
+    display: flex; align-items: center; justify-content: center; color: #1a0f33;
+    box-shadow: var(--shadow-sm); font-size: 16px;
+  }
+  .brand-title { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--gold); letter-spacing: 0.1em; }
+  .brand-sub { font-size: 13px; color: var(--muted); }
+
+  .spacer { flex: 1; }
+
+  .player-pill {
+    display: flex; align-items: center; gap: 14px; padding: 8px 12px;
+    background: rgba(0,0,0,0.6); border: 2px solid #000; box-shadow: var(--shadow-sm);
+  }
+  .player-pill img { width: 36px; height: 36px; border: 2px solid var(--gold); background: #1b1430; }
+  .player-name { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--gold); }
+  .player-meta { font-size: 13px; color: var(--muted); }
+
+  .stat { display: flex; flex-direction: column; gap: 4px; min-width: 110px; }
+  .stat .stat-label { display: flex; justify-content: space-between; font-family: 'Press Start 2P', monospace; font-size: 9px; }
+
+  .time-toggle { display: inline-flex; gap: 2px; padding: 4px; background: rgba(0,0,0,0.6); border: 2px solid #000; box-shadow: var(--shadow-sm); }
+  .time-toggle button { width: 30px; height: 30px; background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+  .time-toggle button.active { background: var(--gold-deep); color: #fff; box-shadow: inset -1px -1px 0 #5c3f00, inset 1px 1px 0 var(--gold); }
+
+  /* Layout */
+  .content { display: flex; gap: 22px; padding: 0 22px 36px 0; align-items: start; transition: all 0.3s ease; }
+  
+  /* Collapsible Sidebar */
+  aside.sidebar {
+    width: 260px; padding: 20px 14px; margin: 0; min-height: calc(100vh - 80px);
+    background: var(--panel-solid); border-right: 2px solid var(--line);
+    display: flex; flex-direction: column; gap: 14px; transition: width 0.3s ease, padding 0.3s ease; flex-shrink: 0;
+  }
+  aside.sidebar > .card { margin: 0; width: 100%; transition: opacity 0.2s; }
+  
+  /* Sidebar collapsed state */
+  body.sidebar-collapsed aside.sidebar { width: 68px; padding: 20px 8px; }
+  body.sidebar-collapsed aside.sidebar .card h3,
+  body.sidebar-collapsed aside.sidebar .btn span,
+  body.sidebar-collapsed aside.sidebar .subject-progress,
+  body.sidebar-collapsed aside.sidebar .card:nth-child(3) { display: none !important; }
+  body.sidebar-collapsed aside.sidebar .btn { justify-content: center; padding: 12px; }
+  body.sidebar-collapsed aside.sidebar .btn i { margin: 0; font-size: 16px; }
+
+  main.main { flex: 1; padding-top: 22px; min-width: 0; }
+  .nav-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .gpa { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 2px solid var(--line); font-size: 15px; color: var(--muted); }
+  .gpa b { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--gold); }
+
+  /* Quest Board */
+  .quest-board {
+    background: linear-gradient(140deg, rgba(28,20,55,0.92), rgba(15,11,30,0.92));
+    border: 3px solid var(--gold); box-shadow: 0 0 0 2px #000, 0 0 24px rgba(255,205,56,0.18), var(--shadow);
+    padding: 20px; position: relative; overflow: hidden; margin-bottom: 22px;
+  }
+  .quest-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 2px solid rgba(255,205,56,0.3); }
+  .quest-head h2 { margin: 6px 0 4px 0; font-family: 'Press Start 2P', monospace; font-size: 15px; color: var(--gold); }
+  .quest-head p { margin: 0; color: var(--muted); font-size: 15px; }
+  .quest-head p b { color: var(--cyan); }
+
+  .quest-progress-badge { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: rgba(0,0,0,0.55); border: 2px solid var(--gold); }
+  .progress-ring { position: relative; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; }
+  .progress-ring svg { transform: rotate(-90deg); }
+  .progress-ring .value { position: absolute; font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--gold); }
+
+  .task-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+  .task { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; background: rgba(0,0,0,0.55); border: 2px solid var(--line); }
+  .task.done .task-title { text-decoration: line-through; color: var(--muted); }
+  .task-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .task-title { font-family: 'Press Start 2P', monospace; font-size: 10px; color: #ebe4c7; }
+  .task-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .task-reward { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--green); white-space: nowrap; }
+
+  .checkbox {
+    width: 22px; height: 22px; border: 3px solid #000; background: #0e0a1d;
+    display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;
+    box-shadow: inset -1px -1px 0 #2a2142, inset 1px 1px 0 #000; color: transparent; font-size: 10px;
+  }
+  .checkbox.checked { background: var(--gold); color: #1a0f33; border-color: #000; }
+
+  /* Grid Layouts */
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .section-head h3 { margin: 0; font-family: 'Press Start 2P', monospace; font-size: 12px; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+  .section-head .count { color: var(--muted); font-size: 14px; }
+
+  .subjects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%,300px),1fr)); gap: 16px; }
+  
+  /* Green Retro Style Subject Card (Matching provided screenshot) */
+  .green-subject-card {
+    background: #0d2217;
+    border: 3px solid #1e4d35;
+    box-shadow: inset -3px -3px 0 #050d09, inset 3px 3px 0 #2b6e4d, var(--shadow);
+    padding: 16px;
+    cursor: pointer;
+    transition: transform 0.1s ease, border-color 0.1s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .green-subject-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--green);
+  }
+  .green-subject-card .subject-tag {
+    align-self: flex-start;
+    background: #1c4530;
+    color: #e0f2e9;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 4px 8px;
+    border: 2px solid #000;
+  }
+  .green-subject-card .subject-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--gold);
+    line-height: 1.4;
+  }
+  .green-subject-card .subject-meta {
+    font-size: 16px;
+    color: #a3c9b5;
+    line-height: 1.4;
+  }
+  .green-subject-card .subject-bar {
+    position: relative;
+    height: 12px;
+    background: #050d0a;
+    border: 2px solid #1a3b2b;
+  }
+  .green-subject-card .subject-bar > span {
+    display: block;
+    height: 100%;
+    background: var(--green);
+  }
+
+  /* Dynamic Navigation Breadcrumb / Curriculum View */
+  .curriculum-breadcrumb {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding: 10px 14px;
+    background: rgba(12, 9, 27, 0.92); border: 2px solid var(--gold); box-shadow: var(--shadow-sm);
+  }
+  .curriculum-breadcrumb button {
+    background: var(--gold-deep); border: 2px solid #000; color: #fff; cursor: pointer;
+    font-family: 'Press Start 2P', monospace; font-size: 9px; padding: 6px 10px;
+    display: inline-flex; align-items: center; gap: 6px; box-shadow: inset -1px -1px 0 #5c3f00, inset 1px 1px 0 var(--gold);
+  }
+  .curriculum-breadcrumb button:hover { filter: brightness(1.15); }
+  .curriculum-breadcrumb .crumb-title { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--gold); margin-left: 8px; }
+
+  .curriculum-stack { display: grid; gap: 12px; }
+  .curriculum-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 15px; border: 2px solid #534867; background: rgba(12,9,27,0.92); }
+  .curriculum-row strong { color: #fffdf4; font-family: 'Press Start 2P', monospace; font-size: 11px; line-height: 1.8; }
+  .curriculum-muted { color: #e2d8ee; font-size: 14px; }
+
+  /* Chapter Notes Dedicated Readable Display Block */
+  .notes-readable-block {
+    background: #0c2215;
+    border: 3px solid var(--green);
+    box-shadow: inset -3px -3px 0 #040e08, inset 3px 3px 0 #288247, var(--shadow);
+    padding: 18px;
+    margin-top: 14px;
+    color: #f3efe0;
+    line-height: 1.6;
+    font-size: 18px;
+  }
+  .notes-readable-block h4 {
+    margin: 0 0 10px 0;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 2px dashed var(--green);
+    padding-bottom: 8px;
+  }
+  .notes-readable-block pre {
+    white-space: pre-wrap;
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    color: #e3fceb;
+    margin: 0;
+    background: rgba(0,0,0,0.35);
+    padding: 12px;
+    border: 2px solid #1a522f;
+  }
+
+  /* Tabs */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Leaderboard */
+  .lb-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; margin-bottom: 8px; background: rgba(0,0,0,0.5); border: 2px solid var(--line); }
+  .lb-row.me { border-color: var(--gold); background: rgba(50,34,8,0.6); }
+  .lb-row .left { display: flex; align-items: center; gap: 12px; }
+  .lb-row .rank { font-family: 'Press Start 2P', monospace; font-size: 11px; width: 28px; color: var(--muted); }
+  .lb-row .rank.gold { color: var(--gold); }
+  .lb-row img { width: 32px; height: 32px; border: 2px solid #000; background: #1b1430; }
+  .lb-row .name { font-family: 'Press Start 2P', monospace; font-size: 10px; color: #ebe4c7; }
+  .lb-row.me .name { color: var(--gold); }
+  .lb-row .streak { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .lb-row .xp { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--cyan); }
+
+  /* Chat */
+  .chat-wrap { display: flex; flex-direction: column; height: 520px; }
+  .chat-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 2px solid var(--line); margin-bottom: 10px; }
+  .chat-box { flex: 1; background: rgba(0,0,0,0.55); border: 2px solid var(--line); padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 15px; }
+  .msg { max-width: 78%; padding: 10px 12px; border: 2px solid #000; }
+  .msg.ai { background: rgba(60,45,120,0.6); border-color: #4a3a85; align-self: flex-start; color: #e2d8ff; }
+  .msg.me { background: rgba(80,55,10,0.6); border-color: #7a5a1a; align-self: flex-end; color: #ffe9a8; }
+  .msg .who { font-family: 'Press Start 2P', monospace; font-size: 9px; display: block; margin-bottom: 5px; opacity: 0.85; }
+
+  .chat-form { display: flex; gap: 8px; margin-top: 10px; }
+  .chat-form input { flex: 1; background: #0e0a1d; border: 2px solid #000; color: var(--text); padding: 10px; font-family: 'VT323', monospace; font-size: 16px; outline: none; }
+  .chat-form input:focus { border-color: var(--gold); }
+
+  /* Notes */
+  .notes-grid { display: grid; grid-template-columns: 220px 1fr; gap: 14px; }
+  .notes-grid textarea { width: 100%; min-height: 300px; background: #07050f; border: 2px solid #000; color: #a8ffb4; padding: 12px; font-family: 'VT323', monospace; font-size: 17px; line-height: 1.5; outline: none; resize: vertical; }
+
+  /* Game Overlay */
+  #wipe { position: fixed; inset: 0; z-index: 90; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+  #wipe.on { opacity: 1; pointer-events: auto; }
+  #wipe .title { font-family: 'Press Start 2P', monospace; font-size: 16px; color: var(--gold); }
+  #wipe .num { font-family: 'Press Start 2P', monospace; font-size: 48px; color: var(--red); }
+
+  #game-modal { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,0.92); display: none; align-items: center; justify-content: center; padding: 16px; }
+  #game-modal.on { display: flex; }
+  .game-card { width: 100%; max-width: 720px; background: linear-gradient(140deg, #1a1330, #0e0a1d); border: 3px solid var(--gold); box-shadow: 0 0 0 2px #000, var(--shadow); padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .arena { background: #0a0618; border: 2px solid var(--line); height: 180px; display: flex; align-items: center; justify-content: space-around; padding: 12px; }
+  .fighter { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .fighter .sprite { width: 64px; height: 64px; border: 2px solid #000; display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: 3px 3px 0 #000; }
+  .fighter .sprite.player { background: #1e3a8a; }
+  .fighter .sprite.boss { background: #7f1d1d; }
+  .fighter .lbl { font-family: 'Press Start 2P', monospace; font-size: 9px; }
+  .fighter .hp { width: 90px; height: 8px; background: #0a0618; border: 1px solid #000; }
+  .fighter .hp > span { display: block; height: 100%; background: var(--green); }
+  .fighter .hp.boss > span { background: var(--red); }
+  .arena .vs { font-family: 'Press Start 2P', monospace; font-size: 20px; color: var(--gold); }
+
+  .quiz { background: rgba(0,0,0,0.55); border: 2px solid var(--line); padding: 14px; text-align: center; }
+  .quiz .q-meta { font-family: 'Press Start 2P', monospace; font-size: 9px; color: var(--muted); margin-bottom: 8px; }
+  .quiz .q-text { font-family: 'Press Start 2P', monospace; font-size: 12px; color: #ffe9a8; margin-bottom: 14px; line-height: 1.6; }
+  .quiz .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .quiz .opts button { padding: 10px 12px; font-size: 10px; text-align: left; }
+
+  .victory { text-align: center; padding: 20px; background: rgba(0,0,0,0.6); border: 2px solid var(--gold); }
+  .victory .title { font-family: 'Press Start 2P', monospace; font-size: 18px; color: var(--gold); margin-bottom: 10px; }
+  .victory .rewards { display: flex; justify-content: center; gap: 20px; font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--gold); margin: 14px 0; }
+
+  /* Toast */
+  #toast { position: fixed; bottom: 20px; right: 20px; z-index: 100; padding: 10px 16px; background: linear-gradient(135deg, #3a2a08, #1a1030); border: 3px solid var(--gold); box-shadow: var(--shadow); display: none; align-items: center; gap: 10px; font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--gold); }
+  #toast.on { display: flex; }
+
+  /* Scrollbars */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #0a0618; }
+  ::-webkit-scrollbar-thumb { background: #3d3356; border: 2px solid #000; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+  .hide { display: none !important; }
+  .text-muted { color: var(--muted); }
+  .text-gold { color: var(--gold); }
+</style>
+</head>
+
+<body class="mode-sunset">
+
+<!-- Background layers -->
+<div id="bg-image"></div>
+<div id="bg-tint"></div>
+<div id="bg-vignette"></div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <button class="sidebar-toggle-btn" id="sidebar-toggle" title="Toggle Sidebar">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+
+      <div class="brand">
+        <div class="brand-badge"><i class="fa-solid fa-hat-wizard"></i></div>
+        <div>
+          <div class="brand-title">PIXEL ACADEMY</div>
+          <div class="brand-sub">Student Quest Hub</div>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+
+      <div class="player-pill">
+        <img id="user-avatar" alt="avatar" />
+        <div>
+          <div class="player-name" id="user-name">—</div>
+          <div class="player-meta" id="user-meta">—</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">
+            <span style="color: var(--red);"><i class="fa-solid fa-heart"></i> HP</span>
+            <span id="hp-text">—</span>
+          </div>
+          <div class="bar bar-sm"><span id="hp-bar" style="background: var(--red); width: 100%;"></span></div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-label">
+            <span style="color: var(--cyan);"><i class="fa-solid fa-bolt"></i> XP</span>
+            <span id="xp-text">—</span>
+          </div>
+          <div class="bar bar-sm"><span id="xp-bar" style="background: var(--cyan); width: 0%;"></span></div>
+        </div>
+
+        <div class="row" style="display:flex; gap:8px;">
+          <div class="chip" style="color: #ff9f3f;" title="Learning streak">
+            <i class="fa-solid fa-fire"></i><span id="streak-text">0</span>d
+          </div>
+          <div class="chip" style="color: var(--gold);" title="Gold">
+            <i class="fa-solid fa-coins"></i><span id="gold-text">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="time-toggle">
+        <button data-mode="morning" title="Morning"><i class="fa-solid fa-sun"></i></button>
+        <button data-mode="noon" title="Noon"><i class="fa-solid fa-cloud-sun"></i></button>
+        <button data-mode="sunset" title="Sunset"><i class="fa-solid fa-mountain-sun"></i></button>
+        <button data-mode="night" title="Night"><i class="fa-solid fa-moon"></i></button>
+      </div>
+
+      <button class="btn btn-red" onclick="toast('Session saved!')">
+        <i class="fa-solid fa-right-from-bracket"></i> LOGOUT
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="card">
+        <h3><i class="fa-solid fa-compass"></i> NAVIGATION</h3>
+        <div class="nav-list" id="nav">
+          <button class="btn full btn-gold" data-tab="home" title="HOME QUEST"><i class="fa-solid fa-house"></i> <span>HOME QUEST</span></button>
+          <button class="btn full" data-tab="classes" title="MY CLASSES"><i class="fa-solid fa-book-bookmark"></i> <span>MY CLASSES</span></button>
+          <button class="btn full" data-tab="leaderboard" title="LEADERBOARD"><i class="fa-solid fa-trophy"></i> <span>LEADERBOARD</span></button>
+          <button class="btn full" data-tab="teacher" title="ASK TEACHERS"><i class="fa-solid fa-graduation-cap"></i> <span>ASK TEACHERS</span></button>
+          <button class="btn full" data-tab="notes" title="MY NOTES"><i class="fa-solid fa-scroll"></i> <span>MY NOTES</span></button>
+        </div>
+      </div>
+
+      <div class="card subject-progress">
+        <h3 style="color: var(--cyan);"><i class="fa-solid fa-chart-line"></i> PERFORMANCE</h3>
+        <div id="performance-list"></div>
+        <div class="gpa">
+          <span>GPA</span><b id="gpa-text">—</b>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><i class="fa-solid fa-rotate-left"></i> RESUME</h3>
+        <div class="small text-muted" id="resume-title" style="margin-bottom: 8px;">—</div>
+        <div class="bar" style="margin-bottom: 10px;"><span id="resume-bar" style="background: var(--gold); width: 0%;"></span></div>
+        <button class="btn btn-gold full" id="resume-btn"><i class="fa-solid fa-play"></i> <span>RESUME LESSON</span></button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- HOME TAB -->
+      <section class="tab-panel active" id="tab-home">
+
+        <!-- Daily quest board -->
+        <div class="quest-board" id="main-quest-board">
+          <div class="quest-head">
+            <div>
+              <span class="chip" style="color: var(--gold); border-color: var(--gold-deep);"><i class="fa-solid fa-crosshairs"></i> DAILY OBJECTIVE</span>
+              <h2>TODAY'S QUEST BOARD</h2>
+              <p>Finish today's tasks to earn <b>+250 XP</b> and keep your streak.</p>
+            </div>
+            <div class="quest-progress-badge">
+              <div class="small">
+                <div class="pixel-font text-gold" style="font-size: 10px;">PROGRESS</div>
+                <div class="text-muted"><span id="done-count">0</span> / <span id="total-count">0</span> DONE</div>
+              </div>
+              <div class="progress-ring">
+                <svg width="56" height="56">
+                  <circle cx="28" cy="28" r="24" stroke="#2a2142" stroke-width="4" fill="none"/>
+                  <circle id="ring" cx="28" cy="28" r="24" stroke="#ffcd38" stroke-width="4" fill="none"
+                          stroke-dasharray="150.8" stroke-dashoffset="150.8" stroke-linecap="square"/>
+                </svg>
+                <div class="value" id="ring-pct">0%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="task-grid" id="task-grid"></div>
+        </div>
+
+        <!-- Subjects Grid -->
+        <div id="main-subjects-container">
+          <div class="section-head">
+            <h3><i class="fa-solid fa-layer-group"></i> SUBJECTS</h3>
+            <span class="count" id="subject-count">— SUBJECTS</span>
+          </div>
+          <div class="subjects-grid" id="subjects-grid"></div>
+        </div>
+
+        <!-- Chapter Detail Area (Replaces Tasks & Subject Grid) -->
+        <div id="curriculum-detail" class="hide" aria-live="polite"></div>
+      </section>
+
+      <!-- CLASSES TAB -->
+      <section class="tab-panel" id="tab-classes">
+        <div class="card">
+          <h3><i class="fa-solid fa-book-open"></i> ENROLLED CURRICULUM</h3>
+          <div class="text-muted small" style="margin-bottom: 12px;">Your semester courses and faculty.</div>
+          <div id="classes-list"></div>
+        </div>
+      </section>
+
+      <!-- LEADERBOARD TAB -->
+      <section class="tab-panel" id="tab-leaderboard">
+        <div class="card">
+          <h3><i class="fa-solid fa-ranking-star"></i> ACADEMY LEADERBOARD</h3>
+          <div class="text-muted small" style="margin-bottom: 12px;">Weekly XP standings — Class 10 league. Resets in 2 days.</div>
+          <div id="leaderboard-list"></div>
+        </div>
+      </section>
+
+      <!-- TEACHER TAB -->
+      <section class="tab-panel" id="tab-teacher">
+        <div class="card">
+          <h3><i class="fa-solid fa-user-graduate"></i> PROF. PIXEL SPARK — AI MENTOR</h3>
+          <div class="chat-wrap">
+            <div class="chat-head">
+              <div class="small text-muted">Ask about physics, code, calculus, biology — anything in your syllabus.</div>
+              <span class="chip" style="color: var(--green);"><i class="fa-solid fa-circle" style="font-size: 7px;"></i> ONLINE</span>
+            </div>
+            <div class="chat-box" id="chat-box">
+              <div class="msg ai">
+                <span class="who">PROF. PIXEL SPARK</span>
+                Greetings scholar! Ask me any physics, code or math question — I'll point you to the right chapter quest.
+              </div>
+            </div>
+            <form class="chat-form" onsubmit="sendMessage(event)">
+              <input id="chat-input" placeholder="Type a question..." autocomplete="off" />
+              <button type="submit" class="btn btn-green"><i class="fa-solid fa-paper-plane"></i> ASK</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- NOTES TAB -->
+      <section class="tab-panel" id="tab-notes">
+        <div class="card">
+          <h3 style="justify-content: space-between;">
+            <span><i class="fa-solid fa-scroll"></i> PIXEL SPELLBOOK — NOTES</span>
+            <button class="btn btn-green" onclick="saveNotes()"><i class="fa-solid fa-floppy-disk"></i> SAVE</button>
+          </h3>
+          <div class="notes-grid">
+            <div>
+              <div class="pixel-font small text-muted" style="margin-bottom: 10px;">TEMPLATES</div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button class="btn full" onclick="loadNoteTopic('physics')"><i class="fa-solid fa-atom"></i> PHYSICS</button>
+                <button class="btn full" onclick="loadNoteTopic('cs')"><i class="fa-solid fa-code"></i> PYTHON CS</button>
+                <button class="btn full" onclick="loadNoteTopic('math')"><i class="fa-solid fa-calculator"></i> CALCULUS</button>
+                <button class="btn full" onclick="loadNoteTopic('biology')"><i class="fa-solid fa-dna"></i> BIOLOGY</button>
+              </div>
+            </div>
+            <div>
+              <textarea id="notes-editor" placeholder="Write your notes..."></textarea>
+              <div class="notes-status" id="notes-status">Auto-saved to local spellbook.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Game wipe overlay -->
+<div id="wipe">
+  <div class="title" id="wipe-title">ENTERING QUEST ARENA...</div>
+  <div class="num" id="wipe-num">3</div>
+  <div class="text-muted small">Loading pixel battle engine...</div>
+</div>
+
+<!-- Game modal -->
+<div id="game-modal">
+  <div class="game-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--line); padding-bottom: 10px;">
+      <div>
+        <span class="chip" style="color: #fff; background: #8c0024; border-color: var(--red);">BOSS CHALLENGE</span>
+        <div class="pixel-font" style="font-size: 13px; color: var(--gold); margin-top: 6px;" id="game-title">—</div>
+      </div>
+      <button class="btn btn-red" onclick="closeGame()"><i class="fa-solid fa-xmark"></i> EXIT</button>
+    </div>
+
+    <div class="arena">
+      <div class="fighter">
+        <div class="sprite player">🧙‍♂️</div>
+        <div class="lbl text-cyan">YOU</div>
+        <div class="hp"><span id="player-hp" style="width: 100%;"></span></div>
+      </div>
+      <div class="vs">VS</div>
+      <div class="fighter">
+        <div class="sprite boss">👾</div>
+        <div class="lbl" style="color: var(--red);" id="boss-name">BOSS</div>
+        <div class="hp boss"><span id="boss-hp" style="width: 100%;"></span></div>
+      </div>
+    </div>
+
+    <div class="quiz" id="quiz">
+      <div class="q-meta">QUESTION <span id="q-num">1</span> OF <span id="q-total">3</span></div>
+      <div class="q-text" id="q-text">—</div>
+      <div class="opts" id="q-opts"></div>
+    </div>
+
+    <div class="victory hide" id="victory">
+      <div class="title">🎉 QUEST VICTORY</div>
+      <div class="text-muted small">You defeated the boss and mastered this chapter!</div>
+      <div class="rewards">
+        <span>+150 XP</span><span>+50 GOLD</span><span>HP RESTORED</span>
+      </div>
+      <button class="btn btn-green" onclick="closeGame()">RETURN TO DASHBOARD</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"><i class="fa-solid fa-bell"></i><span id="toast-msg"></span></div>
+
+<script>
+const MOCK = {
+  user: {
+    name: "Alex Rivers",
+    classroom: "Class 10-A • Tech Mage",
+    avatarSeed: "AlexRivers",
+    hp: 100, maxHp: 100,
+    xp: 2450, maxXp: 3000,
+    streak: 12, gold: 1820, gpa: 3.92
+  },
+  performance: [
+    { label: "Physics", pct: 92, color: "#38b764" },
+    { label: "Computer Sci.", pct: 98, color: "#29adff" },
+    { label: "Mathematics", pct: 88, color: "#ffcd38" },
+    { label: "Biology", pct: 85, color: "#8b5cf6" }
+  ],
+  resume: {
+    subject: "Mathematics",
+    chapter: "Ganita Prakash — Chapter 1",
+    pct: 65
+  },
+  tasks: [
+    { id: 1, title: "Daily Login Bonus", sub: "+50 XP • Streak counter", reward: "+50 XP", done: true },
+    { id: 2, title: "Physics Quantum Quiz", sub: "Score at least 80%", reward: "+100 XP", done: true },
+    { id: 3, title: "Ask one Physics question", sub: "Use Prof. Pixel Spark", reward: "+50 XP", done: false, action: "teacher" },
+    { id: 4, title: "Update Spellbook notes", sub: "Revise Class 10 notes", reward: "+50 XP", done: false, action: "notes" }
+  ],
+  subjects: [
+    { 
+      id: "math", 
+      tag: "MATHEMATICS",
+      title: "Ganita Prakash", 
+      totalChapters: 10,
+      completedItems: 0,
+      totalItems: 212,
+      chapters: [
+        { 
+          id: "ch1", 
+          title: "Number Systems & Real Numbers", 
+          status: "progress", 
+          notes: "Key Concepts:\n1. Real numbers comprise rational and irrational numbers.\n2. Euclid's Division Lemma: a = bq + r, 0 <= r < b.\n3. Fundamental Theorem of Arithmetic: Every composite number can be expressed as a product of primes.",
+          games: [{ title: "Number Systems Challenge", status: "Playable", playable: true }] 
+        },
+        { 
+          id: "ch2", 
+          title: "Polynomials & Quadratic Equations", 
+          status: "locked",
+          notes: "Key Concepts:\n1. Degree of polynomial is the highest power of x.\n2. Quadratic formula: x = (-b ± √(b² - 4ac)) / (2a).\n3. Discriminant D = b² - 4ac determines nature of roots.",
+          games: [{ title: "Polynomials Battle", status: "Playable", playable: true }] 
+        },
+        { 
+          id: "ch3", 
+          title: "Linear Equations in Two Variables", 
+          status: "locked",
+          notes: "Key Concepts:\n1. Standard Form: ax + by + c = 0.\n2. Graphical Method: Lines intersect (unique solution), parallel (no solution), or coincident (infinitely many).",
+          games: [{ title: "Linear Equations Quest", status: "Playable", playable: true }] 
+        }
+      ]
+    },
+    { 
+      id: "science", 
+      tag: "SCIENCE",
+      title: "Curiosity", 
+      totalChapters: 12,
+      completedItems: 0,
+      totalItems: 378,
+      chapters: [
+        { 
+          id: "ch1", 
+          title: "Chemical Reactions & Equations", 
+          status: "progress", 
+          notes: "Key Concepts:\n1. Chemical changes involve breaking and forming of bonds.\n2. Balancing Equations: Conservation of Mass must hold.\n3. Types: Combination, Decomposition, Displacement, Double Displacement, Redox.",
+          games: [{ title: "Chemical Lab Quest", status: "Playable", playable: true }] 
+        },
+        { 
+          id: "ch2", 
+          title: "Acids, Bases & Salts", 
+          status: "locked", 
+          notes: "Key Concepts:\n1. Acids produce H+ ions in water (pH < 7).\n2. Bases produce OH- ions in water (pH > 7).\n3. Neutralization: Acid + Base -> Salt + Water.",
+          games: [{ title: "Acid Base Battle", status: "Playable", playable: true }] 
+        }
+      ]
+    },
+    { 
+      id: "physics", 
+      tag: "PHYSICS",
+      title: "Quantum & Mechanics", 
+      totalChapters: 8,
+      completedItems: 42,
+      totalItems: 180,
+      chapters: [
+        { 
+          id: "ch1", 
+          title: "Quantum Velocity & Motion", 
+          status: "done", 
+          notes: "Key Concepts:\n1. Velocity v = d / t.\n2. Acceleration a = (v - u) / t.\n3. Wave-particle duality of light & particles.",
+          games: [{ title: "Quantum Velocity Challenge", status: "Playable", playable: true }] 
+        }
+      ]
+    },
+    { 
+      id: "cs", 
+      tag: "COMPUTER SCIENCE",
+      title: "Python Programming", 
+      totalChapters: 6,
+      completedItems: 98,
+      totalItems: 120,
+      chapters: [
+        { 
+          id: "ch1", 
+          title: "Python Loops & Control Flow", 
+          status: "done", 
+          notes: "Key Concepts:\n1. For loops iterate over sequences.\n2. While loops repeat as long as condition is true.\n3. Use 'break' to exit and 'continue' to skip iterations.",
+          games: [{ title: "Python Code Battle", status: "Playable", playable: true }] 
+        }
+      ]
+    }
+  ],
+  leaderboard: [
+    { rank: 1, name: "Sarah 'Cyber' Chen", xp: 3420, streak: 18, seed: "Sarah" },
+    { rank: 2, name: "Alex Rivers (You)", xp: 2450, streak: 12, seed: "AlexRivers", me: true },
+    { rank: 3, name: "Marcus Void", xp: 2210, streak: 9, seed: "Marcus" },
+    { rank: 4, name: "Elena Spark", xp: 1980, streak: 7, seed: "Elena" }
+  ],
+  quizzes: [
+    { q: "What is the formula for Linear Velocity (v)?", options: ["v = d / t", "v = m * a", "v = F / d", "v = t * d"], correct: 0 },
+    { q: "In Python, which keyword defines a function?", options: ["func", "def", "function", "define"], correct: 1 },
+    { q: "What is the derivative of x² with respect to x?", options: ["x", "2x", "x³/3", "2"], correct: 1 }
+  ]
+};
+
+window.PixelAPI = {
+  getUser: async () => MOCK.user,
+  getPerformance: async () => MOCK.performance,
+  getResume: async () => MOCK.resume,
+  getTasks: async () => MOCK.tasks,
+  getSubjects: async () => MOCK.subjects,
+  getLeaderboard: async () => MOCK.leaderboard,
+  getQuiz: async () => MOCK.quizzes,
+  toggleTask: async () => true,
+  saveNotes: async () => true,
+  askTeacher: async (q) => `Great question about "${q}"! Review your Class 10 notes and play the related chapter quest to level up.`,
+  launchGame: (gameObj, ch, s) => launchGame(s ? s.title : "QUEST", ch ? ch.title : "BATTLE")
+};
+
+const state = { user: null, tasks: [], subjects: [], autoLight: true };
+
+function modeFromHour(h) {
+  if (h >= 5 && h < 11) return 'morning';
+  if (h >= 11 && h < 16) return 'noon';
+  if (h >= 16 && h < 20) return 'sunset';
+  return 'night';
+}
+
+function applyMode(mode, manual = false) {
+  document.body.className = `mode-${mode}` + (document.body.classList.contains('sidebar-collapsed') ? ' sidebar-collapsed' : '');
+  document.querySelectorAll('.time-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  if (manual) state.autoLight = false;
+}
+
+function autoLightTick() {
+  if (!state.autoLight) return;
+  applyMode(modeFromHour(new Date().getHours()));
+}
+
+function renderUser(u) {
+  state.user = u;
+  document.getElementById('user-avatar').src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(u.avatarSeed)}&backgroundColor=b6e3f4`;
+  document.getElementById('user-name').textContent = u.name;
+  document.getElementById('user-meta').textContent = u.classroom;
+  document.getElementById('hp-text').textContent = `${u.hp}/${u.maxHp}`;
+  document.getElementById('hp-bar').style.width = `${(u.hp / u.maxHp) * 100}%`;
+  document.getElementById('xp-text').textContent = `${u.xp.toLocaleString()}/${u.maxXp.toLocaleString()}`;
+  document.getElementById('xp-bar').style.width = `${(u.xp / u.maxXp) * 100}%`;
+  document.getElementById('streak-text').textContent = u.streak;
+  document.getElementById('gold-text').textContent = u.gold.toLocaleString();
+  document.getElementById('gpa-text').textContent = `${u.gpa.toFixed(2)} / 4.0`;
+}
+
+function renderPerformance(list) {
+  document.getElementById('performance-list').innerHTML = list.map(p => `
+    <div style="margin-bottom: 10px;">
+      <div style="display: flex; justify-content: space-between; font-family: 'Press Start 2P', monospace; font-size: 9px; margin-bottom: 4px;">
+        <span style="color: ${p.color};">${p.label}</span>
+        <span style="color: var(--green);">${p.pct}%</span>
+      </div>
+      <div class="bar bar-sm"><span style="background: ${p.color}; width: ${p.pct}%;"></span></div>
+    </div>
+  `).join('');
+}
+
+function renderResume(r) {
+  document.getElementById('resume-title').textContent = `${r.subject}: ${r.chapter}`;
+  document.getElementById('resume-bar').style.width = `${r.pct}%`;
+  document.getElementById('resume-btn').onclick = () => launchGame(r.subject, r.chapter);
+}
+
+function renderTasks(tasks) {
+  state.tasks = tasks;
+  const grid = document.getElementById('task-grid');
+  grid.innerHTML = tasks.map(t => `
+    <div class="task ${t.done ? 'done' : 'pending'}" data-id="${t.id}">
+      <div class="task-main">
+        <div class="checkbox ${t.done ? 'checked' : ''}" data-id="${t.id}">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div>
+          <div class="task-title">${t.title}</div>
+          <div class="task-sub">${t.sub}</div>
+        </div>
+      </div>
+      ${t.done
+        ? `<span class="task-reward">\${t.reward}</span>`
+        : (t.action
+            ? `<button class="btn btn-gold" style="padding: 6px 10px; font-size: 9px;" data-go="\${t.action}">GO</button>`
+            : `<span class="task-reward">\${t.reward}</span>`)
+      }
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.checkbox').forEach(cb => {
+    cb.addEventListener('click', () => toggleTask(parseInt(cb.dataset.id, 10)));
+  });
+  grid.querySelectorAll('[data-go]').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.go));
+  });
+
+  updateQuestProgress();
+}
+
+function updateQuestProgress() {
+  const done = state.tasks.filter(t => t.done).length;
+  const total = state.tasks.length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById('done-count').textContent = done;
+  document.getElementById('total-count').textContent = total;
+  document.getElementById('ring-pct').textContent = `${pct}%`;
+  const circumference = 2 * Math.PI * 24;
+  document.getElementById('ring').setAttribute('stroke-dashoffset', circumference - (pct / 100) * circumference);
+}
+
+async function toggleTask(id) {
+  const t = state.tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  await PixelAPI.toggleTask(id, t.done);
+  renderTasks(state.tasks);
+  if (t.done) toast(`Quest complete! ${t.reward}`);
+}
+
+function chapterKey(ch, index) { return String(ch.id ?? index); }
+function chapterTitle(ch) { return ch.title ?? ch.name ?? 'Untitled chapter'; }
+function findSubject(id) { return state.subjects.find(s => String(s.id) === String(id)); }
+
+/* Show default home view (Quest Board + Subjects Grid) */
+function showSubjectList() {
+  document.getElementById('main-quest-board').classList.remove('hide');
+  document.getElementById('main-subjects-container').classList.remove('hide');
+  document.getElementById('curriculum-detail').classList.add('hide');
+  history.replaceState(null, '', location.pathname);
+}
+
+/* Render Subjects Cards in Green Retro Style matching screenshot */
+function renderSubjects(subjects) {
+  state.subjects = Array.isArray(subjects) ? subjects : [];
+  document.getElementById('subject-count').textContent = `${state.subjects.length} SUBJECTS`;
+  document.getElementById('subjects-grid').innerHTML = state.subjects.map(s => {
+    const totalItems = s.totalItems || 100;
+    const completedItems = s.completedItems || 0;
+    const pct = Math.round((completedItems / totalItems) * 100);
+    const chapterCount = Array.isArray(s.chapters) ? s.chapters.length : (s.totalChapters || 0);
+
+    return `
+      <div class="green-subject-card" data-open-subject="${escapeHtml(String(s.id))}">
+        <div class="subject-tag">${escapeHtml(s.tag || 'SUBJECT')}</div>
+        <div class="subject-title">${escapeHtml(s.title || 'Subject Title')}</div>
+        <div class="subject-meta">${chapterCount} chapters</div>
+        <div class="subject-meta">${completedItems}/${totalItems} learning items completed</div>
+        <div class="subject-bar">
+          <span style="width: ${pct}%;"></span>
+        </div>
+      </div>
+    `;
+  }).join('') || '<div class="card">No subjects available.</div>';
+    
+  document.querySelectorAll('[data-open-subject]').forEach(b => {
+    b.addEventListener('click', () => openSubject(b.dataset.openSubject));
+  });
+}
+
+function showCurriculum(markup) {
+  document.getElementById('main-quest-board').classList.add('hide');
+  document.getElementById('main-subjects-container').classList.add('hide');
+  const el = document.getElementById('curriculum-detail');
+  el.classList.remove('hide');
+  el.innerHTML = markup;
+}
+
+/* Clicking on Subject Block -> Shows Chapter Names & Action Buttons */
+function openSubject(subjectId, updateUrl = true) {
+  const s = findSubject(subjectId);
+  if (!s) return showSubjectList();
+  const chapters = Array.isArray(s.chapters) ? s.chapters : [];
+  
+  showCurriculum(`
+    <div class="curriculum-breadcrumb">
+      <button id="btn-back-home"><i class="fa-solid fa-house"></i> Home</button>
+      <button id="btn-back-subjects"><i class="fa-solid fa-arrow-left"></i> All Subjects</button>
+      <span class="crumb-title">${escapeHtml(s.title)}</span>
+    </div>
+    <div class="section-head">
+      <h3>${escapeHtml(s.title.toUpperCase())} — CHAPTERS</h3>
+      <span class="count">${chapters.length} chapters available</span>
+    </div>
+    <div class="curriculum-stack">
+      ${chapters.map((ch, i) => `
+        <div class="curriculum-row">
+          <div>
+            <strong>\${escapeHtml(chapterTitle(ch))}</strong>
+            <div class="curriculum-muted">Chapter \${i + 1}</div>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-green" data-notes-chapter="\${escapeHtml(chapterKey(ch, i))}">
+              <i class="fa-solid fa-scroll"></i> CHAPTER NOTES
+            </button>
+            <button class="btn btn-gold" data-play-chapter="\${escapeHtml(chapterKey(ch, i))}">
+              <i class="fa-solid fa-gamepad"></i> GAMES TO PLAY
+            </button>
+          </div>
+        </div>
+      `).join('') || '<div class="card">No chapters are available.</div>'}
+    </div>
+    <!-- Dedicated Notes Block Display Area -->
+    <div id="notes-display-area" class="hide"></div>
+  `);
+
+  document.getElementById('btn-back-home').onclick = () => { switchTab('home'); showSubjectList(); };
+  document.getElementById('btn-back-subjects').onclick = showSubjectList;
+  
+  // Attach Chapter Notes Click Handlers
+  document.querySelectorAll('[data-notes-chapter]').forEach(b => {
+    b.onclick = () => showChapterNotes(subjectId, b.dataset.notes-chapter);
+  });
+
+  // Attach Games to Play Click Handlers
+  document.querySelectorAll('[data-play-chapter]').forEach(b => {
+    b.onclick = () => openChapterGames(subjectId, b.dataset.playChapter);
+  });
+
+  if (updateUrl) history.replaceState(null, '', `#subject=${encodeURIComponent(subjectId)}`);
+}
+
+/* Display Chapter Notes in a readable green-themed block */
+function showChapterNotes(subjectId, key) {
+  const s = findSubject(subjectId); if (!s) return;
+  const chapters = Array.isArray(s.chapters) ? s.chapters : [];
+  const ch = chapters.find((x, i) => chapterKey(x, i) === String(key));
+  if (!ch) return;
+
+  const notesArea = document.getElementById('notes-display-area');
+  notesArea.classList.remove('hide');
+  notesArea.innerHTML = `
+    <div class="notes-readable-block">
+      <h4><i class="fa-solid fa-scroll"></i> ${escapeHtml(chapterTitle(ch).toUpperCase())} — NOTES</h4>
+      <pre>${escapeHtml(ch.notes || "No notes available for this chapter yet.")}</pre>
+    </div>
+  `;
+  notesArea.scrollIntoView({ behavior: 'smooth' });
+}
+
+/* Launch Games to Play directly for the chapter */
+function openChapterGames(subjectId, key) {
+  const s = findSubject(subjectId); if (!s) return;
+  const chapters = Array.isArray(s.chapters) ? s.chapters : [];
+  const ch = chapters.find((x, i) => chapterKey(x, i) === String(key));
+  if (!ch) return;
+
+  launchGame(s.title, chapterTitle(ch));
+}
+
+function restoreCurriculumRoute() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  const subject = params.get('subject');
+  if (!subject) return showSubjectList();
+  openSubject(subject, false);
+}
+
+function renderClasses(subjects) {
+  document.getElementById('classes-list').innerHTML = subjects.map(s => `
+    <div class="curriculum-row">
+      <div>
+        <strong>${escapeHtml(s.title)}</strong>
+        <div class="curriculum-muted">${Array.isArray(s.chapters) ? s.chapters.length + ' Chapters' : ''}</div>
+      </div>
+      <button class="btn btn-ghost" data-class-subject="${escapeHtml(String(s.id))}">
+        <i class="fa-solid fa-book-open"></i> VIEW CHAPTERS
+      </button>
+    </div>
+  `).join('');
+
+  document.querySelectorAll('[data-class-subject]').forEach(b => {
+    b.onclick = () => {
+      switchTab('home');
+      openSubject(b.dataset.classSubject);
+    };
+  });
+}
+
+function renderLeaderboard(list) {
+  document.getElementById('leaderboard-list').innerHTML = list.map(r => `
+    <div class="lb-row ${r.me ? 'me' : ''}">
+      <div class="left">
+        <span class="rank ${r.rank === 1 ? 'gold' : ''}">#${r.rank}</span>
+        <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(r.seed)}" />
+        <div>
+          <div class="name">${r.name}</div>
+          <div class="streak">Streak: ${r.streak}d</div>
+        </div>
+      </div>
+      <div class="xp">${r.xp.toLocaleString()} XP</div>
+    </div>
+  `).join('');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+  document.querySelectorAll('#nav button').forEach(b => {
+    b.classList.toggle('btn-gold', b.dataset.tab === tab);
+  });
+}
+
+async function sendMessage(e) {
+  e.preventDefault();
+  const input = document.getElementById('chat-input');
+  const q = input.value.trim();
+  if (!q) return;
+  const box = document.getElementById('chat-box');
+
+  const mine = document.createElement('div');
+  mine.className = 'msg me';
+  mine.innerHTML = `<span class="who">YOU</span>${escapeHtml(q)}`;
+  box.appendChild(mine);
+  input.value = '';
+  box.scrollTop = box.scrollHeight;
+
+  const reply = await PixelAPI.askTeacher(q);
+  setTimeout(() => {
+    const ai = document.createElement('div');
+    ai.className = 'msg ai';
+    ai.innerHTML = `<span class="who">PROF. PIXEL SPARK</span>${escapeHtml(reply)}`;
+    box.appendChild(ai);
+    box.scrollTop = box.scrollHeight;
+  }, 600);
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+const NOTE_KEY = 'pixel_dashboard_notes_v2';
+const noteTopics = {
+  physics: "// PHYSICS MECHANICS\nVelocity: v = d / t\nAcceleration: a = (v - u) / t\nNewton's 2nd Law: F = m * a",
+  cs: "# PYTHON\ndef calculate_score(xp, bonus):\n    return xp * bonus\nprint(calculate_score(100, 1.5))",
+  math: "/* CALCULUS */\nd/dx (x^n) = n * x^(n-1)\n∫ x dx = x²/2 + C",
+  biology: "// CELL GENETICS\nDNA: double helix A-T, C-G\nMitosis -> 2 cells\nMeiosis -> 4 gametes"
+};
+
+function loadNoteTopic(topic) {
+  document.getElementById('notes-editor').value = noteTopics[topic] || '';
+  document.getElementById('notes-status').textContent = `Loaded "${topic}" template.`;
+}
+
+async function saveNotes() {
+  const val = document.getElementById('notes-editor').value;
+  localStorage.setItem(NOTE_KEY, val);
+  await PixelAPI.saveNotes(val);
+  document.getElementById('notes-status').textContent = `Saved at ${new Date().toLocaleTimeString()}.`;
+  toast('Notes saved!');
+}
+
+function loadNotesFromStorage() {
+  const v = localStorage.getItem(NOTE_KEY);
+  if (v) document.getElementById('notes-editor').value = v;
+  else loadNoteTopic('physics');
+}
+
+let game = { stage: 0, bossHp: 100, quiz: [] };
+
+async function launchGame(subject, chapter) {
+  const wipe = document.getElementById('wipe');
+  const num = document.getElementById('wipe-num');
+  document.getElementById('wipe-title').textContent = `${subject.toUpperCase()} — ${chapter}`;
+  wipe.classList.add('on');
+
+  let n = 3;
+  num.textContent = n;
+  const t = setInterval(() => {
+    n--;
+    if (n > 0) num.textContent = n;
+    else {
+      clearInterval(t);
+      wipe.classList.remove('on');
+      openGame(subject, chapter);
+    }
+  }, 500);
+}
+
+async function openGame(subject, chapter) {
+  game.stage = 0; game.bossHp = 100;
+  game.quiz = await PixelAPI.getQuiz(subject);
+
+  document.getElementById('game-title').textContent = `${subject}: ${chapter}`;
+  document.getElementById('boss-name').textContent = `${subject.toUpperCase()} GOLEM`;
+  document.getElementById('boss-hp').style.width = '100%';
+  document.getElementById('player-hp').style.width = '100%';
+  document.getElementById('q-total').textContent = game.quiz.length;
+  document.getElementById('quiz').classList.remove('hide');
+  document.getElementById('victory').classList.add('hide');
+  document.getElementById('game-modal').classList.add('on');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = game.quiz[game.stage];
+  document.getElementById('q-num').textContent = game.stage + 1;
+  document.getElementById('q-text').textContent = q.q;
+  const opts = document.getElementById('q-opts');
+  opts.innerHTML = q.options.map((o, i) =>
+    `<button class="btn" data-i="${i}">${String.fromCharCode(65 + i)}) ${o}</button>`
+  ).join('');
+  opts.querySelectorAll('button').forEach(b =>
+    b.addEventListener('click', () => answer(parseInt(b.dataset.i, 10), q.correct))
+  );
+}
+
+function answer(selected, correct) {
+  if (selected === correct) {
+    const hit = Math.ceil(100 / game.quiz.length);
+    game.bossHp = Math.max(0, game.bossHp - hit);
+    document.getElementById('boss-hp').style.width = `${game.bossHp}%`;
+    toast('CRITICAL HIT!');
+    if (game.bossHp <= 0) {
+      document.getElementById('quiz').classList.add('hide');
+      document.getElementById('victory').classList.remove('hide');
+      return;
+    }
+    game.stage++;
+    renderQuestion();
+  } else {
+    const playerBar = document.getElementById('player-hp');
+    const cur = parseFloat(playerBar.style.width) || 100;
+    playerBar.style.width = `${Math.max(0, cur - 25)}%`;
+    toast('MISSED — Enemy counter!');
+  }
+}
+
+function closeGame() { document.getElementById('game-modal').classList.remove('on'); }
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('on'), 2600);
+}
+
+async function init() {
+  // Navigation tabs
+  document.querySelectorAll('#nav button').forEach(b => {
+    b.addEventListener('click', () => switchTab(b.dataset.tab));
+  });
+
+  // Sidebar collapse toggle
+  document.getElementById('sidebar-toggle').addEventListener('click', () => {
+    document.body.classList.toggle('sidebar-collapsed');
+  });
+
+  // Time toggle
+  document.querySelectorAll('.time-toggle button').forEach(b => {
+    b.addEventListener('click', () => applyMode(b.dataset.mode, true));
+  });
+
+  applyMode(modeFromHour(new Date().getHours()));
+  setInterval(autoLightTick, 60 * 1000);
+
+  const [user, perf, resume, tasks, subjects, lb] = await Promise.all([
+    PixelAPI.getUser(),
+    PixelAPI.getPerformance(),
+    PixelAPI.getResume(),
+    PixelAPI.getTasks(),
+    PixelAPI.getSubjects(),
+    PixelAPI.getLeaderboard()
+  ]);
+
+  renderUser(user);
+  renderPerformance(perf);
+  renderResume(resume);
+  renderTasks(tasks);
+  renderSubjects(subjects);
+  renderClasses(subjects);
+  restoreCurriculumRoute();
+  renderLeaderboard(lb);
+  loadNotesFromStorage();
+}
+
+window.addEventListener('hashchange', restoreCurriculumRoute);
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

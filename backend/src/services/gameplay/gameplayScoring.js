@@ -1,6 +1,7 @@
 'use strict';
 const { fail } = require('./gameplayEvents');
 function scoreChallenge(challenge, response) {
+  if (challenge.type === 'CONSTRUCTION') return require('../educationalVisuals/construction').scoreConstruction(challenge.construction,response);
   // Phase 3D specifies exact case-sensitive matching. No trimming, case folding,
   // numeric conversion or Unicode normalization is silently introduced here.
   if (challenge.type === 'CLOZE') {

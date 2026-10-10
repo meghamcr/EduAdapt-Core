@@ -67,7 +67,7 @@ async function preflight(config, checkSources) {
 }
 
 async function implementationFingerprint() {
-  const names = ["curriculumParser.js", "curriculumValidator.js", "curriculumIdentity.js", "pdfExtractor.js", "ingestionConfig.js", "ingestCurriculum.js", "geminiRetry.js", "sourceContext.js", "sourceFidelity.js", "curriculumResponseSchema.js", "providerDiagnostics.js", "geminiRequest.js"];
+  const names = ["curriculumParser.js", "curriculumValidator.js", "curriculumIdentity.js", "pdfExtractor.js", "ingestionConfig.js", "ingestCurriculum.js", "geminiRetry.js", "sourceContext.js", "sourceFidelity.js", "textAuthority.js", "curriculumResponseSchema.js", "providerDiagnostics.js", "geminiRequest.js"];
   const files = await Promise.all(names.map(async name => ({ name, sha256: fingerprint(await fs.readFile(path.join(__dirname, name))) })));
   const packagePath = path.resolve(__dirname, "../../../package-lock.json");
   return fingerprint({ files, lock: fingerprint(await fs.readFile(packagePath)), node: process.versions.node });

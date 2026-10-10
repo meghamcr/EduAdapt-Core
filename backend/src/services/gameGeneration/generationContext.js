@@ -1,3 +1,4 @@
+const { isDevelopmentVersion, markDevelopmentContext, sourceEvidenceFor } = require('../../development/developmentWorkspace');
 const { createArtifactService, ArtifactServiceError } = require('../curriculumArtifacts/artifactService');
 const issuedContexts = new WeakSet();
 function requireGenerationContext(context) {
@@ -70,7 +71,8 @@ function createGenerationContextService(db) {
           objectiveScope: 'CHAPTER',
           learningObjectives: snapshot.learning_objectives.map((text, index) => ({ index, text, sourceRefs: sourceRefs(snapshot.objective_evidence[index]) })),
           authoritativeContent: projection.content,
-          materials: selected.materials.map(item => ({
+          materials: selected.materials.map((item, materialIndex) => ({
+            ...(sourceEvidenceFor(tx, version) ? {sourceUnitIds:sourceEvidenceFor(tx, version).materials.find(m => m.nodeId === nodeId && m.materialIndex === materialIndex)?.unitIds || []} : {}),
             authority: 'EXPLICIT_SOURCE_CONTENT', evidenceKind: item.evidence_kind,
             role: item.role, text: item.text, sourceRefs: sourceRefs(item.source_refs),
             studentCompletion: item.student_completion,
@@ -79,7 +81,7 @@ function createGenerationContextService(db) {
           }))
         },
         grounding: {
-          reviewStatus: 'APPROVED', imported: true, artifactChecksum: version.artifactChecksum,
+          reviewStatus: version.reviewStatus, imported: true, ...(isDevelopmentVersion(tx, version) ? {usage:'DEVELOPMENT_ONLY'} : {}), artifactChecksum: version.artifactChecksum,
           sourceFingerprint: version.sourceFingerprint, contentFingerprint: version.contentFingerprint,
           sourceRegistry: snapshot.source_context.documents.map(doc => ({ sourceId: doc.sourceId, sha256: doc.sha256, pages: doc.pages }))
         },
@@ -91,6 +93,7 @@ function createGenerationContextService(db) {
         }
       });
       issuedContexts.add(context);
+      markDevelopmentContext(tx, version, context);
       return context;
   }
   async function build(selection) {

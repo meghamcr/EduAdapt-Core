@@ -1,3 +1,4 @@
+const { isDevelopmentVersion } = require('../../development/developmentWorkspace');
 const { isDeepStrictEqual: equal } = require('node:util');
 const { prepareArtifactStorage, prepareReviewTransition } = require('./artifactStorage');
 const { fingerprint } = require('../curriculumIngestion/curriculumIdentity');
@@ -63,6 +64,7 @@ function createArtifactService(db, { dbNull, now = () => new Date() } = {}) {
     return transaction(async tx => {
       await lock(tx, id);
       const { version } = await checked(tx, id);
+      if (isDevelopmentVersion(tx, version)) fail('DEVELOPMENT_REVIEW_FORBIDDEN');
       if (version.reviewRevision !== expectedRevision) fail('STALE_REVIEW');
       const transition = prepareReviewTransition(version, toStatus, { reviewerReference, notes, reviewedAt: now() });
       const updated = await tx.curriculumArtifactVersion.updateMany({ where: transition.expected, data: transition.update });
@@ -81,7 +83,7 @@ function createArtifactService(db, { dbNull, now = () => new Date() } = {}) {
     const { version, identity } = stored, a = version.snapshot;
     result.identity = identity; result.reviewStatus = version.reviewStatus; result.reviewRevision = version.reviewRevision;
     result.provenance = { artifactChecksum: version.artifactChecksum, sourceFingerprint: version.sourceFingerprint, contentFingerprint: version.contentFingerprint };
-    if (version.reviewStatus !== 'APPROVED') result.conflicts.push('NOT_APPROVED');
+    if (version.reviewStatus !== 'APPROVED' && !isDevelopmentVersion(tx, version)) result.conflicts.push('NOT_APPROVED');
     if (version.authorityVersion !== 2 || !version.authoritativeNodes) result.conflicts.push('AUTHORITY_V2_REQUIRED');
     result.book = { id: a.book_id, board: a.board, grade: String(a.grade), subject: a.subject, title: a.book, edition: a.edition || null };
     result.chapter = { id: a.chapter_id, bookId: a.book_id, chapterNumber: a.chapter_number, title: a.chapter, learningObjectives: a.learning_objectives };

@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NCERT Grade 4 Math: Chapter 1 Shapes Around Us</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Segoe+UI:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #e2ecc8;
+      --card-bg: #f5e6d3;
+      --card-border: #7c5c43;
+      --text-color: #3e2723;
+      --accent-green: #1b5e20;
+      --wood-btn: #8d5b4c;
+      --wood-btn-hover: #a06857;
+      --wood-shadow: #4a2c20;
+      --hud-bg: #d8c3a5;
+      --highlight: #b45309;
+    }
+
+    [data-theme="dark"] {
+      --bg-main: #181825;
+      --card-bg: #2a2a3c;
+      --card-border: #8b6d57;
+      --text-color: #f5e6d3;
+      --accent-green: #4adb4a;
+      --wood-btn: #5e3a2b;
+      --wood-btn-hover: #734735;
+      --wood-shadow: #2a150c;
+      --hud-bg: #11111b;
+      --highlight: #fbbf24;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body, html {
+      width: 100vw; height: 100vh; overflow: hidden;
+      background: var(--bg-main); color: var(--text-color);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .pixel-text { font-family: 'Press Start 2P', monospace; -webkit-font-smoothing: none; }
+
+    #app { width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+
+    header {
+      height: 75px; background: var(--hud-bg);
+      border-bottom: 4px solid var(--card-border); padding: 0 1.5rem;
+      display: flex; justify-content: space-between; align-items: center; z-index: 50;
+    }
+
+    .brand-title { font-size: 1rem; font-weight: 800; color: var(--text-color); line-height: 1.3; }
+
+    .hud-controls { display: flex; gap: 0.8rem; align-items: center; }
+
+    .hud-badge {
+      background: var(--card-bg); border: 3px solid var(--card-border);
+      padding: 0.5rem 0.9rem; font-size: 0.85rem; font-weight: 800;
+      color: var(--text-color); border-radius: 8px; box-shadow: 0 3px 0px var(--wood-shadow);
+    }
+
+    .wood-btn {
+      background: var(--wood-btn); border: 3px solid #f5e6d3; color: #fff;
+      padding: 0.65rem 1.1rem; font-size: 0.85rem; font-weight: 700;
+      border-radius: 10px; cursor: pointer; box-shadow: 0 4px 0px var(--wood-shadow);
+      display: inline-flex; align-items: center; gap: 8px; transition: all 0.1s;
+    }
+
+    .wood-btn:hover { background: var(--wood-btn-hover); transform: translateY(-2px); }
+    .wood-btn.danger { background: #b91c1c; border-color: #fca5a5; }
+
+    main { flex: 1; position: relative; padding: 1.2rem; }
+
+    .panel {
+      position: absolute; top: 1.2rem; left: 1.2rem; right: 1.2rem; bottom: 1.2rem;
+      background: var(--card-bg); border: 4px solid var(--card-border);
+      border-radius: 18px; padding: 1.8rem; display: none; flex-direction: column;
+      box-shadow: 0 8px 0px var(--wood-shadow); overflow-y: auto;
+    }
+
+    .panel.active { display: flex; }
+
+    h1 { font-size: 1.5rem; color: var(--text-color); margin-bottom: 1rem; }
+    h2 { font-size: 1.25rem; color: var(--accent-green); margin-bottom: 1rem; }
+    p { font-size: 1.1rem; line-height: 1.6; color: var(--text-color); }
+
+    .in-game-notice-board {
+      background: #fef3c7; border: 3px solid #f59e0b; border-radius: 12px;
+      padding: 1rem 1.2rem; margin-bottom: 1rem; display: none;
+      color: #78350f; font-size: 1.05rem; font-weight: 700;
+    }
+    .in-game-notice-board.error { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+
+    /* LESSON CARDS WITH DIAGRAMS */
+    .concept-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; margin: 1rem 0; }
+    .concept-card {
+      background: var(--bg-main); border: 3px solid var(--card-border);
+      border-radius: 14px; padding: 1.2rem; text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .concept-card svg { width: 120px; height: 120px; margin: 0.8rem 0; }
+
+    /* DIAGRAM FLOWCHART LEVEL 3 */
+    .flowchart-container {
+      background: var(--bg-main); border: 4px solid var(--card-border);
+      border-radius: 16px; padding: 1.5rem; margin: 1rem 0;
+      display: flex; flex-direction: column; align-items: center; gap: 1rem;
+      min-height: 220px; justify-content: center;
+    }
+    .flowchart-node {
+      background: var(--card-bg); border: 3px solid var(--card-border);
+      padding: 1rem 1.5rem; border-radius: 14px; display: flex;
+      align-items: center; gap: 1.2rem; width: 100%; max-width: 650px;
+      box-shadow: 0 4px 0px var(--wood-shadow);
+    }
+    .flowchart-node svg { width: 70px; height: 70px; flex-shrink: 0; }
+    .flowchart-node-text { text-align: left; font-size: 1.05rem; font-weight: 700; }
+
+    /* LEVEL 1 MAP GRID */
+    .map-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; margin: 1rem 0; flex: 1; }
+    .map-card {
+      background: var(--bg-main); border: 4px solid var(--card-border);
+      border-radius: 16px; padding: 1.2rem; text-align: center; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .map-card:hover { background: #fdf6e2; transform: translateY(-3px); }
+    .map-card.solved { background: #c8e6c9; border-color: #1b5e20; cursor: default; }
+    .map-card svg { width: 100px; height: 100px; margin-bottom: 0.5rem; }
+
+    #riddle-box {
+      background: var(--bg-main); border: 4px solid var(--card-border);
+      padding: 2rem; border-radius: 18px; margin: 1rem 0; display: none;
+      flex-direction: column; gap: 1.5rem; flex: 1; justify-content: center;
+    }
+
+    /* LEVEL 2 & 4 CARDS */
+    .puzzle-card {
+      background: var(--bg-main); border: 4px solid var(--card-border);
+      padding: 1.2rem; border-radius: 16px; display: flex;
+      justify-content: space-between; align-items: center; margin-bottom: 1.2rem;
+      gap: 1.5rem;
+    }
+    .puzzle-card svg { width: 140px; height: 120px; flex-shrink: 0; background: #fff; border: 2px solid var(--card-border); border-radius: 10px; }
+    .puzzle-select {
+      font-size: 1.05rem; font-weight: 700; padding: 0.8rem 1.2rem;
+      border-radius: 10px; border: 3px solid var(--card-border);
+      background: var(--card-bg); color: var(--text-color); cursor: pointer;
+    }
+
+    /* SUMMARY BOARD */
+    .summary-board {
+      background: var(--bg-main); border: 4px solid var(--card-border);
+      border-radius: 16px; padding: 1.5rem; margin: 1.2rem 0; text-align: left; width: 100%;
+    }
+    .summary-board li { font-size: 1.05rem; margin-bottom: 0.6rem; line-height: 1.5; }
+
+    .modal-overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.65); display: none; justify-content: center;
+      align-items: center; z-index: 100;
+    }
+    .modal-box {
+      background: var(--card-bg); border: 4px solid var(--card-border);
+      border-radius: 18px; padding: 2.5rem; text-align: center; max-width: 550px;
+    }
+  </style>
+</head>
+<body data-theme="light">
+
+  <div id="app">
+    <header>
+      <div class="brand-title">📐 NCERT MATH MELA: SHAPES AROUND US<br><span style="font-size:0.8rem; opacity:0.85;">GRADE 4 CHAPTER 1</span></div>
+
+      <div class="hud-controls">
+        <div class="hud-badge">⚡ XP:<span id="hud-xp">0</span></div>
+        <div class="hud-badge">⭐ SCORE:<span id="hud-score">0</span></div>
+        <div class="hud-badge">⏳ <span id="hud-time">00:00</span></div>
+
+        <button class="wood-btn" onclick="triggerInGameHint()">💡 HINT</button>
+        <button class="wood-btn" onclick="toggleTheme()">☀️/🌙</button>
+        <button class="wood-btn" onclick="navBack()">⬅ BACK</button>
+        <button class="wood-btn" onclick="togglePause()">⏸ PAUSE</button>
+        <button class="wood-btn danger" onclick="confirmQuit()">🚪 QUIT</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- INTRO PANEL -->
+      <section id="panel-intro" class="panel active">
+        <h1>CHAPTER 1: SHAPES AROUND US (MATH MELA)</h1>
+        <p style="margin-bottom:1.5rem;">STUDY 3D SOLIDS & NETS, MEASURE CLASSROOM & YOGA ANGLES, DIAGRAM PAPER FOLDING CREASES, AND SOLVE SPIDER WEB MATCHSTICK PUZZLES!</p>
+        
+        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+          <button class="wood-btn" style="font-size:1rem;" onclick="showConceptLesson()">💡 LEARN CONCEPTS (WHAT IS WHAT)</button>
+          <button class="wood-btn" style="font-size:1rem;" onclick="goToInstructions(1)">START MATH QUEST ➔</button>
+        </div>
+      </section>
+
+      <!-- CONCEPT LESSON PANEL -->
+      <section id="panel-concept" class="panel">
+        <h2 class="pixel-text">📖 WHAT IS WHAT: DIAGRAM LESSONS</h2>
+        
+        <div class="concept-grid">
+          <!-- ACUTE -->
+          <div class="concept-card">
+            <h3 style="font-size:1.1rem; color:var(--highlight);">ACUTE ANGLE (&lt;90°)</h3>
+            <svg viewBox="0 0 100 100">
+              <line x1="20" y1="80" x2="80" y2="80" stroke="#7c5c43" stroke-width="6"/>
+              <line x1="20" y1="80" x2="70" y2="30" stroke="#1b5e20" stroke-width="6"/>
+              <path d="M 40 80 A 20 20 0 0 0 35 65" fill="none" stroke="#b45309" stroke-width="4"/>
+            </svg>
+            <p style="font-size:0.95rem;">An angle <strong>smaller than a Right Angle</strong> (&lt;90°). Found in open scissors and yoga poses.</p>
+          </div>
+
+          <!-- RIGHT -->
+          <div class="concept-card">
+            <h3 style="font-size:1.1rem; color:var(--accent-green);">RIGHT ANGLE (=90°)</h3>
+            <svg viewBox="0 0 100 100">
+              <line x1="20" y1="80" x2="80" y2="80" stroke="#7c5c43" stroke-width="6"/>
+              <line x1="20" y1="80" x2="20" y2="20" stroke="#1b5e20" stroke-width="6"/>
+              <rect x="20" y="65" width="15" height="15" fill="none" stroke="#b45309" stroke-width="3"/>
+            </svg>
+            <p style="font-size:0.95rem;">An exact square corner <strong>equals 90°</strong>. Made using a double-folded paper checker.</p>
+          </div>
+
+          <!-- OBTUSE -->
+          <div class="concept-card">
+            <h3 style="font-size:1.1rem; color:#b91c1c;">OBTUSE ANGLE (&gt;90°)</h3>
+            <svg viewBox="0 0 100 100">
+              <line x1="40" y1="80" x2="90" y2="80" stroke="#7c5c43" stroke-width="6"/>
+              <line x1="40" y1="80" x2="10" y2="30" stroke="#1b5e20" stroke-width="6"/>
+              <path d="M 60 80 A 20 20 0 0 0 25 60" fill="none" stroke="#b45309" stroke-width="4"/>
+            </svg>
+            <p style="font-size:0.95rem;">An angle <strong>larger than a Right Angle</strong> (&gt;90°). Found in clock hands at 4:00.</p>
+          </div>
+
+          <!-- CIRCLE & RIGIDITY -->
+          <div class="concept-card" style="grid-column: span 3;">
+            <h3 style="font-size:1.1rem; color:var(--highlight);">CIRCLE CREASES & SHAPE RIGIDITY</h3>
+            <div style="display:flex; gap:2rem; align-items:center; justify-content:center;">
+              <svg viewBox="0 0 100 100" style="width:110px; height:110px;">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#7c5c43" stroke-width="5"/>
+                <circle cx="50" cy="50" r="4" fill="#b45309"/>
+                <line x1="10" y1="50" x2="90" y2="50" stroke="#b91c1c" stroke-width="4"/>
+                <line x1="50" y1="50" x2="50" y2="10" stroke="#1b5e20" stroke-width="4"/>
+              </svg>
+              <div style="text-align:left;">
+                <p style="font-size:0.95rem; margin-bottom:0.4rem;">🔴 <strong>Diameter (D):</strong> Crease line passing through Center A connecting both borders.</p>
+                <p style="font-size:0.95rem; margin-bottom:0.4rem;">🟢 <strong>Radius (R):</strong> Distance from Center A to border. $Radius = \frac{1}{2} \times Diameter$.</p>
+                <p style="font-size:0.95rem;">🔺 <strong>Triangle Rigidity:</strong> Triangles do NOT deform when pushed; square straw frames bend into rhombuses!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="wood-btn" style="align-self:flex-start; margin-top:1rem;" onclick="goToInstructions(1)">PROCEED TO LEVEL 1 ➔</button>
+      </section>
+
+      <!-- INSTRUCTIONS & DID YOU KNOW -->
+      <section id="panel-instructions" class="panel">
+        <h2 id="inst-title">LEVEL INSTRUCTIONS</h2>
+        <div id="inst-body" style="background:var(--bg-main); border:4px solid var(--card-border); padding:1.5rem; border-radius:12px; margin-bottom:1.5rem; line-height:1.8;"></div>
+        
+        <div style="display:flex; gap:1.2rem; flex-wrap:wrap;">
+          <button class="wood-btn" onclick="revealDidYouKnow()">💡 DID YOU KNOW? (CLICK HERE)</button>
+          <button class="wood-btn" onclick="startActiveLevel()">START LEVEL 🎮</button>
+        </div>
+
+        <div class="did-you-know-answer-box" id="fact-answer-box" style="display:none; background:var(--bg-main); border:4px solid var(--card-border); border-radius:14px; padding:1.5rem; margin-top:1.5rem;">
+          <h3 id="fact-title" style="font-size:1.1rem; color:var(--highlight); margin-bottom:0.8rem;">TEXTBOOK FACT</h3>
+          <p id="fact-body" style="line-height:1.8; margin-bottom:1.2rem;"></p>
+          <button class="wood-btn" onclick="startActiveLevel()">START LEVEL NOW ➔</button>
+        </div>
+      </section>
+
+      <!-- LEVEL 1: NETS & 3D SOLIDS -->
+      <section id="panel-level1" class="panel">
+        <h2>LEVEL 1: 3D SOLIDS & NET MATCHING (PAGE 9)</h2>
+
+        <div class="in-game-notice-board" id="l1-notice"></div>
+
+        <div id="riddle-box">
+          <h3 id="riddle-title" style="font-size:1.3rem; color:var(--highlight);">🧩 NET PUZZLE</h3>
+          <p id="riddle-text" style="font-size:1.2rem; line-height:1.8;"></p>
+          <div id="riddle-options" style="display:flex; gap:1.2rem; flex-wrap:wrap; margin-top:1rem;"></div>
+        </div>
+
+        <div class="map-grid" id="map-cards-container">
+          <!-- CUBE NET SVG -->
+          <div class="map-card" id="card-cube" onclick="solveRiddle('cube')">
+            <svg viewBox="0 0 100 100">
+              <rect x="40" y="10" width="20" height="20" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <rect x="20" y="30" width="20" height="20" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <rect x="40" y="30" width="20" height="20" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <rect x="60" y="30" width="20" height="20" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <rect x="40" y="50" width="20" height="20" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <rect x="40" y="70" width="20" height="20" fill="none" stroke="#7c5c43" stroke-width="3"/>
+            </svg>
+            <p style="font-size:1.1rem; font-weight:800;">CROSS NET (6 SQUARES)</p>
+            <p id="status-cube" style="font-size:0.9rem; opacity:0.8; margin-top:0.3rem;">UNEXPLORED</p>
+          </div>
+
+          <!-- PRISM NET SVG -->
+          <div class="map-card" id="card-prism" onclick="solveRiddle('prism')">
+            <svg viewBox="0 0 100 100">
+              <polygon points="50,15 25,40 75,40" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <rect x="25" y="40" width="50" height="20" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <polygon points="50,85 25,60 75,60" fill="none" stroke="#7c5c43" stroke-width="3"/>
+            </svg>
+            <p style="font-size:1.1rem; font-weight:800;">TRIANGULAR PRISM NET</p>
+            <p id="status-prism" style="font-size:0.9rem; opacity:0.8; margin-top:0.3rem;">UNEXPLORED</p>
+          </div>
+
+          <!-- PYRAMID NET SVG -->
+          <div class="map-card" id="card-pyramid" onclick="solveRiddle('pyramid')">
+            <svg viewBox="0 0 100 100">
+              <rect x="35" y="35" width="30" height="30" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <polygon points="50,10 35,35 65,35" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <polygon points="50,90 35,65 65,65" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <polygon points="10,50 35,35 35,65" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <polygon points="90,50 65,35 65,65" fill="none" stroke="#7c5c43" stroke-width="3"/>
+            </svg>
+            <p style="font-size:1.1rem; font-weight:800;">SQUARE PYRAMID NET</p>
+            <p id="status-pyramid" style="font-size:0.9rem; opacity:0.8; margin-top:0.3rem;">UNEXPLORED</p>
+          </div>
+
+          <!-- CYLINDER NET SVG -->
+          <div class="map-card" id="card-cylinder" onclick="solveRiddle('cylinder')">
+            <svg viewBox="0 0 100 100">
+              <circle cx="50" cy="20" r="12" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <rect x="20" y="35" width="60" height="30" fill="none" stroke="#7c5c43" stroke-width="3"/>
+              <circle cx="50" cy="80" r="12" fill="none" stroke="#7c5c43" stroke-width="3"/>
+            </svg>
+            <p style="font-size:1.1rem; font-weight:800;">CYLINDER NET</p>
+            <p id="status-cylinder" style="font-size:0.9rem; opacity:0.8; margin-top:0.3rem;">UNEXPLORED</p>
+          </div>
+        </div>
+
+        <button class="wood-btn" id="l1-complete-btn" style="display:none; align-self:flex-start; margin-top:auto;" onclick="finishLevel(1)">LEVEL 1 COMPLETE ➔</button>
+      </section>
+
+      <!-- LEVEL 2: CLASSROOM & YOGA ANGLES -->
+      <section id="panel-level2" class="panel">
+        <h2>LEVEL 2: CLASSROOM & YOGA ANGLE IDENTIFICATION (PAGE 10-12)</h2>
+
+        <div class="in-game-notice-board" id="l2-notice"></div>
+
+        <div id="l2-tasks-container" style="display:flex; flex-direction:column; gap:1.2rem; margin:1rem 0; flex:1; justify-content:center;"></div>
+
+        <button class="wood-btn" style="align-self:flex-start; font-size:1rem;" onclick="checkLevel2()">SUBMIT ANGLE MATCHES ➔</button>
+      </section>
+
+      <!-- LEVEL 3: PAPER FOLDING DIAGRAM FLOWCHART -->
+      <section id="panel-level3" class="panel">
+        <h2>LEVEL 3: PAPER FOLDING & RIGID TRIANGLE DIAGRAMS (PAGE 14, 17)</h2>
+
+        <div class="in-game-notice-board" id="l3-notice"></div>
+
+        <div class="flowchart-container" id="bridge-flowchart">
+          <div style="font-size:1.2rem; font-weight:800; opacity:0.7;">NO DIAGRAM STEPS ASSEMBLED</div>
+        </div>
+
+        <div id="bridge-opts" style="display:flex; gap:1rem; flex-wrap:wrap; justify-content:center; margin-top:1rem;"></div>
+      </section>
+
+      <!-- LEVEL 4: SPIDER WEBS & MATCHSTICKS WITH EMBEDDED DIAGRAMS -->
+      <section id="panel-level4" class="panel">
+        <h2>LEVEL 4: SQUIGGLY'S WEBS & MATCHSTICK PUZZLES (PAGE 21-22)</h2>
+
+        <div class="in-game-notice-board" id="l4-notice"></div>
+
+        <div style="display:flex; flex-direction:column; gap:1.2rem; margin:1rem 0;">
+          
+          <!-- TASK 1: SQUIGGLY'S WEB -->
+          <div class="puzzle-card">
+            <div style="flex:1;">
+              <h3 style="font-size:1.1rem; color:var(--highlight); margin-bottom:0.4rem;">1. SQUIGGLY'S TRIANGULAR WEB (PAGE 21)</h3>
+              <p style="font-size:1rem; line-height:1.5;">Examine the triangular web on the right. How many triangles are in her web?</p>
+            </div>
+            <!-- EXACT PAGE 21 SQUIGGLY WEB SVG -->
+            <svg viewBox="0 0 100 100">
+              <polygon points="50,10 10,90 90,90" fill="none" stroke="#3e2723" stroke-width="3"/>
+              <line x1="50" y1="10" x2="50" y2="90" stroke="#3e2723" stroke-width="2"/>
+              <line x1="30" y1="50" x2="70" y2="50" stroke="#3e2723" stroke-width="2"/>
+              <polygon points="50,30 30,70 70,70" fill="none" stroke="#1b5e20" stroke-width="2"/>
+            </svg>
+            <select id="l4-ans-0" class="puzzle-select">
+              <option value="">NUMBER</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+
+          <!-- TASK 2: WIGGLY'S WEB -->
+          <div class="puzzle-card">
+            <div style="flex:1;">
+              <h3 style="font-size:1.1rem; color:var(--highlight); margin-bottom:0.4rem;">2. WIGGLY'S RECTANGULAR WEB (PAGE 21)</h3>
+              <p style="font-size:1rem; line-height:1.5;">Examine Wiggly's web made of rectangular grids. How many rectangles can you see in his web?</p>
+            </div>
+            <!-- EXACT PAGE 21 WIGGLY WEB SVG -->
+            <svg viewBox="0 0 100 100">
+              <rect x="15" y="15" width="70" height="70" fill="none" stroke="#3e2723" stroke-width="3"/>
+              <line x1="50" y1="15" x2="50" y2="85" stroke="#3e2723" stroke-width="2"/>
+            </svg>
+            <select id="l4-ans-1" class="puzzle-select">
+              <option value="">NUMBER</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+
+          <!-- TASK 3: MATCHSTICKS -->
+          <div class="puzzle-card">
+            <div style="flex:1;">
+              <h3 style="font-size:1.1rem; color:var(--highlight); margin-bottom:0.4rem;">3. MATCHSTICK PUZZLE (PAGE 22)</h3>
+              <p style="font-size:1rem; line-height:1.5;">Given 3 separate matchstick triangles (9 sticks total), move how many matchsticks to form 4 triangles?</p>
+            </div>
+            <!-- EXACT PAGE 22 MATCHSTICK SVG -->
+            <svg viewBox="0 0 100 100">
+              <!-- TRIANGLE 1 -->
+              <polygon points="20,70 10,90 30,90" fill="none" stroke="#b45309" stroke-width="4"/>
+              <!-- TRIANGLE 2 -->
+              <polygon points="50,70 40,90 60,90" fill="none" stroke="#b45309" stroke-width="4"/>
+              <!-- TRIANGLE 3 -->
+              <polygon points="80,70 70,90 90,90" fill="none" stroke="#b45309" stroke-width="4"/>
+            </svg>
+            <select id="l4-ans-2" class="puzzle-select">
+              <option value="">NUMBER</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+
+        </div>
+
+        <button class="wood-btn" style="align-self:flex-start; font-size:1rem;" onclick="checkLevel4()">SUBMIT PUZZLE ANSWERS ➔</button>
+      </section>
+
+      <!-- VICTORY & SUMMARY NOTE -->
+      <section id="panel-victory" class="panel" style="text-align:center; justify-content:center; align-items:center;">
+        <h1 style="color:var(--highlight); font-size:1.8rem;">🏆 CHAPTER 1 MASTERED!</h1>
+        <p style="margin:0.5rem 0; font-size:1.1rem; font-weight:700;">CONGRATULATIONS! YOU COMPLETED ALL GEOMETRY QUESTS WITH DISTINCTION!</p>
+
+        <div class="summary-board">
+          <h3 style="font-size:1.2rem; color:var(--highlight); margin-bottom:0.6rem;">📝 Chapter Summary Note: What We Learned</h3>
+          <ul>
+            <li><strong>Level 1 (Nets & 3D Solids):</strong> 2D Nets fold along dotted creases to construct 3D solids (Cubes have 6 square faces, Pyramids have triangular sides)[cite: 8, 9, 16].</li>
+            <li><strong>Level 2 (Angle Types):</strong> Right angles equal $90^\circ$ (book corners); Acute angles are smaller ($<90^\circ$ in yoga poses); Obtuse angles are larger ($>90^\circ$ at clock 4:00)[cite: 11, 12, 16].</li>
+            <li><strong>Level 3 (Diagrams & Rigidity):</strong> Folding paper circles in half twice reveals Center Point A, Diameter, and Radius; Triangles are rigid shapes that do not deform when pushed[cite: 14, 16].</li>
+            <li><strong>Level 4 (Webs & Matchsticks):</strong> Geometry principles allow counting nested shapes in spider webs and reconfiguring matchstick triangles[cite: 16].</li>
+          </ul>
+        </div>
+
+        <div style="background:var(--bg-main); border:4px solid var(--card-border); border-radius:16px; padding:1.2rem; width:100%; max-width:600px; margin-bottom:1rem;">
+          <h3 style="font-size:1.1rem; margin-bottom:0.5rem;">FINAL MATH SCORE</h3>
+          <p id="final-stats" style="color:var(--accent-green); font-size:1.1rem; font-weight:800;"></p>
+        </div>
+
+        <button class="wood-btn" style="font-size:1rem;" onclick="location.reload()">🔄 REPLAY QUEST</button>
+      </section>
+
+      <!-- PAUSE MODAL -->
+      <div class="modal-overlay" id="pause-modal">
+        <div class="modal-box">
+          <h2>⏸ GAME PAUSED</h2>
+          <p style="margin:1.5rem 0;">YOUR QUEST IS PAUSED.</p>
+          <button class="wood-btn" onclick="togglePause()">RESUME ➔</button>
+        </div>
+      </div>
+
+      <!-- QUIT MODAL -->
+      <div class="modal-overlay" id="quit-modal">
+        <div class="modal-box">
+          <h2 style="color:#b91c1c;">⚠️ CONFIRM QUIT</h2>
+          <p style="margin:1.5rem 0; line-height:1.8;">YOUR CHANGES WILL NOT BE SAVED! WOULD YOU STILL LIKE TO QUIT THE GAME?</p>
+          <div style="display:flex; gap:1rem; justify-content:center;">
+            <button class="wood-btn danger" onclick="executeQuit()">YES, QUIT</button>
+            <button class="wood-btn" onclick="closeQuitModal()">NO, KEEP PLAYING</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCORECARD MODAL -->
+      <div class="modal-overlay" id="scorecard-modal">
+        <div class="modal-box">
+          <h2 style="color:var(--highlight);">⭐ LEVEL COMPLETED!</h2>
+          <p id="scorecard-stats" style="margin:1.5rem 0; line-height:2;"></p>
+          <button class="wood-btn" onclick="nextLevelFromScorecard()">CONTINUE ➔</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let state = {
+      xp: 0, score: 0, level: 1, startTime: Date.now(),
+      paused: false, solvedSet: new Set(), bridgeConstructed: [], screenHistory: ['panel-intro']
+    };
+
+    const instData = {
+      1: { title: "LEVEL 1: 3D SOLIDS & NET MATCHING", body: "MATCH 2D NETS TO THEIR EXACT 3D SOLIDS (CUBE, PRISM, PYRAMID, CYLINDER) FROM TEXTBOOK PAGE 9." },
+      2: { title: "LEVEL 2: CLASSROOM & YOGA ANGLES", body: "IDENTIFY ACUTE (<90°), RIGHT (=90°), AND OBTUSE (>90°) ANGLES IN CLASSROOM OBJECTS AND YOGA POSES." },
+      3: { title: "LEVEL 3: PAPER FOLDING & RIGIDITY DIAGRAMS", body: "ASSEMBLE THE EXACT DIAGRAM STEPS FOR PAPER CIRCLE FOLDING AND STRAW TRIANGLE RIGIDITY TESTS." },
+      4: { title: "LEVEL 4: SPIDER WEBS & MATCHSTICK PUZZLES", body: "EXAMINE THE EMBEDDED DIAGRAMS AND SOLVE SQUIGGLY'S WEBS AND MATCHSTICK PUZZLES FROM PAGE 21-22." }
+    };
+
+    const factData = {
+      1: { title: "BOX NETS", body: "FLATTENING A 3D BOX CREATES ITS 2D NET; FOLDING ALONG DOTTED LINES REBUILDS THE ORIGINAL SOLID!" },
+      2: { title: "RIGHT ANGLE CHECKER", body: "DOUBLE-FOLDING A CIRCULAR PAPER CREATES AN EXACT RIGHT ANGLE CHECKER (90 DEGREES)!" },
+      3: { title: "RIGIDITY OF TRIANGLES", body: "TRIANGLES DO NOT CHANGE SHAPE WHEN PUSHED, MAKING THEM THE MOST RIGID GEOMETRIC STRUCTURE IN ENGINEERING!" },
+      4: { title: "CIRCLE DIAMETERS", body: "ALL CREASES PASSING THROUGH CENTER POINT 'A' ARE DIAMETERS; RADIUS IS HALF THE LENGTH OF DIAMETER!" }
+    };
+
+    const levelHints = {
+      1: "💡 Hint: 6 equal squares fold into a Cube; 2 triangles + 3 rectangles fold into a Triangular Prism!",
+      2: "💡 Hint: Book corners are Right Angles (90°); Scissors open narrow are Acute (<90°); Clock 4:00 is Obtuse (>90°)!",
+      3: "💡 Hint: Step Sequence: Fold Circle in Half ➔ Fold Quarter ➔ Unfold to see Center A ➔ Push Straw Square to Form Rigid Triangle!",
+      4: "💡 Hint: Squiggly's web has 5 nested triangles; Wiggly's web has 3 rectangles; Moving 2 matchsticks forms 4 smaller triangles!"
+    };
+
+    const riddles = {
+      cube: { title: "CROSS NET (6 SQUARES)", text: "I consist of 6 equal square faces arranged in a cross. What 3D solid do I fold into?", ans: "CUBE", opts: ["CUBE", "CYLINDER", "SQUARE PYRAMID"] },
+      prism: { title: "TRIANGULAR PRISM NET", text: "I have 2 triangular end faces and 3 rectangular side faces. What solid am I?", ans: "TRIANGULAR PRISM", opts: ["TRIANGULAR PRISM", "CUBE", "CYLINDER"] },
+      pyramid: { title: "SQUARE PYRAMID NET", text: "I have 1 square center base surrounded by 4 triangles. What solid am I?", ans: "SQUARE PYRAMID", opts: ["SQUARE PYRAMID", "TRIANGULAR PRISM", "CUBE"] },
+      cylinder: { title: "CYLINDER NET", text: "I have 1 long rectangle and 2 circular top/bottom caps. What solid am I?", ans: "CYLINDER", opts: ["CYLINDER", "CUBE", "TRIANGULAR PRISM"] }
+    };
+
+    setInterval(() => {
+      if(!state.paused) {
+        let elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+        let m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+        let s = String(elapsed % 60).padStart(2, '0');
+        document.getElementById('hud-time').innerText = `${m}:${s}`;
+      }
+    }, 1000);
+
+    function updateHUD() {
+      document.getElementById('hud-xp').innerText = state.xp;
+      document.getElementById('hud-score').innerText = state.score;
+    }
+
+    function showNotice(text, isError = false) {
+      let noticeElem = document.getElementById(`l${state.level}-notice`);
+      if(noticeElem) {
+        noticeElem.innerText = text;
+        noticeElem.className = `in-game-notice-board ${isError ? 'error' : ''}`;
+        noticeElem.style.display = 'block';
+      }
+    }
+
+    function triggerInGameHint() {
+      state.xp = Math.max(0, state.xp - 10);
+      updateHUD();
+      showNotice(levelHints[state.level] || "Read instructions carefully!");
+    }
+
+    function showConceptLesson() { switchPanel('panel-concept'); }
+
+    function toggleTheme() {
+      const body = document.body;
+      body.setAttribute('data-theme', body.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+    }
+
+    function togglePause() {
+      state.paused = !state.paused;
+      document.getElementById('pause-modal').style.display = state.paused ? 'flex' : 'none';
+    }
+
+    function navBack() {
+      if(state.screenHistory.length > 1) {
+        state.screenHistory.pop();
+        let previousPanel = state.screenHistory[state.screenHistory.length - 1];
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(previousPanel).classList.add('active');
+      } else { confirmQuit(); }
+    }
+
+    function confirmQuit() { document.getElementById('quit-modal').style.display = 'flex'; }
+    function closeQuitModal() { document.getElementById('quit-modal').style.display = 'none'; }
+    function executeQuit() {
+      closeQuitModal();
+      state.screenHistory = ['panel-intro'];
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-intro').classList.add('active');
+    }
+
+    function switchPanel(panelId) {
+      if(state.screenHistory[state.screenHistory.length - 1] !== panelId) {
+        state.screenHistory.push(panelId);
+      }
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(panelId).classList.add('active');
+    }
+
+    function goToInstructions(lvl) {
+      state.level = lvl;
+      document.getElementById('inst-title').innerText = instData[lvl].title;
+      document.getElementById('inst-body').innerText = instData[lvl].body;
+      document.getElementById('fact-answer-box').style.display = 'none';
+      switchPanel('panel-instructions');
+    }
+
+    function revealDidYouKnow() {
+      const factBox = document.getElementById('fact-answer-box');
+      document.getElementById('fact-title').innerText = factData[state.level].title;
+      document.getElementById('fact-body').innerText = factData[state.level].body;
+      factBox.style.display = 'block';
+    }
+
+    function startActiveLevel() {
+      switchPanel(`panel-level${state.level}`);
+      if(state.level === 1) {
+        document.getElementById('riddle-box').style.display = 'none';
+        document.getElementById('map-cards-container').style.display = 'grid';
+      }
+      if(state.level === 2) initLevel2();
+      if(state.level === 3) initLevel3();
+    }
+
+    /* LEVEL 1 */
+    function solveRiddle(key) {
+      if(state.solvedSet.has(key)) return;
+      let r = riddles[key];
+      document.getElementById('map-cards-container').style.display = 'none';
+
+      let box = document.getElementById('riddle-box');
+      box.style.display = 'flex';
+      document.getElementById('riddle-title').innerText = `🧩 RIDDLE FOR ${r.title}`;
+      document.getElementById('riddle-text').innerText = r.text;
+
+      let opts = document.getElementById('riddle-options');
+      opts.innerHTML = '';
+
+      r.opts.forEach(opt => {
+        let btn = document.createElement('button');
+        btn.className = 'wood-btn';
+        btn.style.fontSize = '1rem'; btn.style.padding = '1rem 1.5rem';
+        btn.innerText = opt;
+        btn.onclick = () => {
+          if(opt === r.ans) {
+            state.solvedSet.add(key);
+            state.xp += 50; state.score += 100;
+            updateHUD();
+
+            let card = document.getElementById(`card-${key}`);
+            card.classList.add('solved');
+            document.getElementById(`status-${key}`).innerText = "✅ SOLVED";
+
+            box.style.display = 'none';
+            document.getElementById('map-cards-container').style.display = 'grid';
+
+            if(state.solvedSet.size === 4) {
+              document.getElementById('l1-complete-btn').style.display = 'inline-flex';
+            }
+          } else {
+            showNotice("❌ Incorrect net solid matching! Re-check face count.", true);
+          }
+        };
+        opts.appendChild(btn);
+      });
+    }
+
+    /* LEVEL 2 */
+    const l2Tasks = [
+      { desc: "CLASSROOM WINDOW CORNER", type: "RIGHT ANGLE (90°)", svg: `<svg viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" fill="none" stroke="#7c5c43" stroke-width="4"/><rect x="20" y="60" width="20" height="20" fill="none" stroke="#b45309" stroke-width="3"/></svg>` },
+      { desc: "YOGA POSE TRIANGLE LEGS", type: "ACUTE ANGLE (<90°)", svg: `<svg viewBox="0 0 100 100"><polygon points="50,15 20,85 80,85" fill="none" stroke="#7c5c43" stroke-width="4"/><path d="M 40 85 A 15 15 0 0 0 35 72" fill="none" stroke="#b45309" stroke-width="3"/></svg>` },
+      { desc: "CLOCK HANDS AT 4:00", type: "OBTUSE ANGLE (>90°)", svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#7c5c43" stroke-width="4"/><line x1="50" y1="50" x2="50" y2="15" stroke="#b45309" stroke-width="4"/><line x1="50" y1="50" x2="80" y2="70" stroke="#b45309" stroke-width="4"/></svg>` }
+    ];
+
+    function initLevel2() {
+      let container = document.getElementById('l2-tasks-container');
+      container.innerHTML = '';
+      l2Tasks.forEach((t, i) => {
+        let div = document.createElement('div');
+        div.className = 'puzzle-card';
+        div.innerHTML = `
+          ${t.svg}
+          <div style="flex:1;">
+            <span style="font-size:1.2rem; font-weight:800;">${i+1}. ${t.desc}</span>
+          </div>
+          <select id="l2-sel-${i}" class="puzzle-select">
+            <option value="">SELECT ANGLE TYPE</option>
+            <option value="ACUTE ANGLE (<90°)">ACUTE ANGLE (&lt;90°)</option>
+            <option value="RIGHT ANGLE (90°)">RIGHT ANGLE (90°)</option>
+            <option value="OBTUSE ANGLE (>90°)">OBTUSE ANGLE (&gt;90°)</option>
+          </select>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function checkLevel2() {
+      let ok = true;
+      l2Tasks.forEach((t, i) => {
+        if(document.getElementById(`l2-sel-${i}`).value !== t.type) ok = false;
+      });
+
+      if(ok) {
+        state.xp += 200; state.score += 400; updateHUD(); finishLevel(2);
+      } else {
+        showNotice("⚠️ Incorrect angle choices! Window = 90°, Yoga leg = Acute, Clock 4:00 = Obtuse.", true);
+      }
+    }
+
+    /* LEVEL 3 FLOWCHART WITH SVG DIAGRAMS */
+    const bridgeSteps = [
+      { step: 1, name: "FOLD CIRCLE IN HALF", svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="#f5e6d3" stroke="#7c5c43" stroke-width="4"/><line x1="10" y1="50" x2="90" y2="50" stroke="#b91c1c" stroke-dasharray="4" stroke-width="4"/></svg>` },
+      { step: 2, name: "FOLD HALF AGAIN IN HALF", svg: `<svg viewBox="0 0 100 100"><path d="M 50 10 A 40 40 0 0 1 90 50 L 50 50 Z" fill="#f5e6d3" stroke="#7c5c43" stroke-width="4"/></svg>` },
+      { step: 3, name: "UNFOLD TO SEE CENTER A & RADIUS", svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#7c5c43" stroke-width="4"/><circle cx="50" cy="50" r="4" fill="#b45309"/><line x1="50" y1="50" x2="50" y2="10" stroke="#1b5e20" stroke-width="4"/></svg>` },
+      { step: 4, name: "PUSH STRAW SQUARE TO FORM RIGID TRIANGLE", svg: `<svg viewBox="0 0 100 100"><polygon points="20,80 80,80 50,20" fill="none" stroke="#1b5e20" stroke-width="5"/></svg>` }
+    ];
+
+    function initLevel3() {
+      state.bridgeConstructed = [];
+      updateBridgeUI();
+    }
+
+    function updateBridgeUI() {
+      let flowchart = document.getElementById('bridge-flowchart');
+      let opts = document.getElementById('bridge-opts');
+      opts.innerHTML = '';
+
+      if(state.bridgeConstructed.length === 0) {
+        flowchart.innerHTML = `<div style="font-size:1.2rem; font-weight:800; opacity:0.7;">NO DIAGRAM STEPS ASSEMBLED</div>`;
+      } else {
+        flowchart.innerHTML = '';
+        state.bridgeConstructed.forEach((item, idx) => {
+          let node = document.createElement('div');
+          node.className = 'flowchart-node';
+          node.innerHTML = `
+            ${item.svg}
+            <div class="flowchart-node-text">STEP ${idx+1}: ${item.name}</div>
+          `;
+          flowchart.appendChild(node);
+
+          if(idx < state.bridgeConstructed.length - 1 || state.bridgeConstructed.length < 4) {
+            let arr = document.createElement('div');
+            arr.className = 'flowchart-arrow'; arr.innerText = "⬇";
+            flowchart.appendChild(arr);
+          }
+        });
+      }
+
+      if(state.bridgeConstructed.length >= 4) {
+        showNotice("🎉 Diagram Sequence Complete: Circle folded to center A & Straw triangle rigidity proven!");
+        state.xp += 250; state.score += 500; updateHUD();
+        setTimeout(() => finishLevel(3), 800);
+        return;
+      }
+
+      let shuffled = [...bridgeSteps].sort(() => Math.random() - 0.5);
+      shuffled.forEach(item => {
+        let btn = document.createElement('button');
+        btn.className = 'wood-btn'; btn.style.fontSize = '0.9rem';
+        btn.innerText = item.name;
+        btn.onclick = () => {
+          let nextReqStep = state.bridgeConstructed.length + 1;
+          if(item.step === nextReqStep) {
+            state.bridgeConstructed.push(item);
+            updateBridgeUI();
+          } else {
+            showNotice("❌ Wrong diagram order! Fold circle half ➔ Fold quarter ➔ Unfold for Center A ➔ Push straw frame!", true);
+          }
+        };
+        opts.appendChild(btn);
+      });
+    }
+
+    /* LEVEL 4 CHECK */
+    const l4Answers = { 0: "5", 1: "3", 2: "2" };
+
+    function checkLevel4() {
+      let ok = true;
+      for(let i = 0; i < 3; i++) {
+        let val = document.getElementById(`l4-ans-${i}`).value;
+        if(val !== l4Answers[i]) ok = false;
+      }
+
+      if(ok) {
+        state.xp += 300; state.score += 600; updateHUD(); finishLevel(4);
+      } else {
+        showNotice("⚠️ Re-check web counts! Squiggly = 5 triangles, Wiggly = 3 rectangles, Matchsticks = 2.", true);
+      }
+    }
+
+    function finishLevel(lvl) {
+      document.getElementById('scorecard-modal').style.display = 'flex';
+      document.getElementById('scorecard-stats').innerText = `LEVEL ${lvl} CLEAR!\nXP EARNED: +${state.xp}\nTIME: ${document.getElementById('hud-time').innerText}`;
+    }
+
+    function nextLevelFromScorecard() {
+      document.getElementById('scorecard-modal').style.display = 'none';
+      if(state.level < 4) goToInstructions(state.level + 1);
+      else {
+        switchPanel('panel-victory');
+        document.getElementById('final-stats').innerText = `TOTAL XP: ${state.xp} | SCORE: ${state.score}`;
+      }
+    }
+  </script>
+</body>
+</html>

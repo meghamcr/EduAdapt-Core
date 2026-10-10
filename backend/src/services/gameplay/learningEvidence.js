@@ -30,13 +30,13 @@ function observationsFor(session, state, events, game) {
       provenance: { sessionId: session.id, gameSpecId: session.gameSpecId, specificationChecksum: session.specificationChecksum,
         artifactVersionId: session.artifactVersionId, nodeId: session.nodeId, challengeId: item.challengeId,
         difficulty: session.difficulty, remediation: item.remediation, scopeSequence: event.scopeSequence, objectiveRefs: [],
-        taskFingerprint: fingerprint(game.challenges.find(c => c.id === item.challengeId).prompt),
-        evidenceKind: 'DOMAIN_VERIFIED_SOURCE_RECALL', timingKind: 'SERVER_RECEIPT_INTERVAL' }
+        taskFingerprint: fingerprint(game.challenges.find(c => c.id === item.challengeId).construction || game.challenges.find(c => c.id === item.challengeId).prompt),
+        evidenceKind: game.challenges.find(c => c.id === item.challengeId).type==='CONSTRUCTION' ? 'GENERATED_REFERENCE_CONSTRUCTION' : 'DOMAIN_VERIFIED_SOURCE_RECALL', timingKind: 'SERVER_RECEIPT_INTERVAL' }
     };
   });
 }
 function deriveMastery(observations) {
-  const window = observations.slice(-5);
+  const window = observations.filter(o=>o.provenance.evidenceKind!=='GENERATED_REFERENCE_CONSTRUCTION').slice(-5);
   const strong = window.filter(o => o.correctness === true && o.completion && !o.skipped && !o.abandoned && o.attempts === 1 && o.hintsUsed === 0 && o.mistakes === 0 && !o.provenance.remediation);
   const struggle = window.filter(o => o.mistakes >= 2 || o.correctness === false && o.attempts >= 1);
   const varied = new Set(strong.map(o => o.provenance.taskFingerprint)).size >= 2 && new Set(strong.map(o => o.provenance.sessionId)).size >= 2;

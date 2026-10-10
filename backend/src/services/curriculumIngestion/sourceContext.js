@@ -1,5 +1,6 @@
 const { PDFDocument } = require("pdf-lib");
 const { IngestionError } = require("./geminiRetry");
+const { sourceTextUnits } = require("./textAuthority");
 
 // Keep original PDF bytes for whole documents; copy only approved pages for subsets.
 // No OCR, diagram reconstruction, remote file persistence or source-file mutation.
@@ -25,6 +26,7 @@ async function buildSourceContext(sources, extractions, mode = "pdf") {
         { inlineData: { mimeType: "application/pdf", data: bytes.toString("base64") } });
     }
   }
-  return { version: 1, mode, documents, mediaParts };
+  return { version: 1, mode, documents, mediaParts,
+    ...(mode === "text" ? { textUnits: sourceTextUnits(documents) } : {}) };
 }
 module.exports = { buildSourceContext };

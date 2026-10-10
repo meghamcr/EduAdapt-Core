@@ -1,3 +1,48 @@
 .DS_Store
 .env
 node_modules/
+# Unity generated folders
+unity-runtime/[Ll]ibrary/
+unity-runtime/[Tt]emp/
+unity-runtime/[Oo]bj/
+unity-runtime/[Bb]uild/
+unity-runtime/[Bb]uilds/
+unity-runtime/[Ll]ogs/
+unity-runtime/[Uu]ser[Ss]ettings/
+unity-runtime/[Mm]emoryCaptures/
+unity-runtime/[Rr]ecordings/
+
+# IDE / generated files
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity crash/debug artifacts
+sysinfo.txt
+crashlytics-build.properties
+
+# Unity generated files
+EduAdapt-GameRuntime/Library/
+EduAdapt-GameRuntime/Temp/
+EduAdapt-GameRuntime/Obj/
+EduAdapt-GameRuntime/Logs/
+EduAdapt-GameRuntime/Build/
+EduAdapt-GameRuntime/Builds/
+EduAdapt-GameRuntime/UserSettings/
+EduAdapt-GameRuntime/MemoryCaptures/
+EduAdapt-GameRuntime/Recordings/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+.DS_Store

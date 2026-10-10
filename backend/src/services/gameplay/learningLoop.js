@@ -11,7 +11,7 @@ const { requireRuntimeVersion } = require('./runtimeProjection');
 
 // Server-only composition: actor identity comes from authenticated transport, not
 // a request body. There is deliberately no default client, provider or allow policy.
-function createLearningLoop(db, { provider, authorizeLearning, authorizeExecution, loadPrerequisites, now, maxRepairs = 1 } = {}) {
+function createLearningLoop(db, { provider, authorizeLearning, authorizeExecution, loadPrerequisites, prepareGeneration, now, maxRepairs = 1 } = {}) {
   const contexts = createGenerationContextService(db), persistence = createGamePersistenceService(db);
   const gameplay = createGameplayService(db, { authorizeExecution, now });
   async function start(raw) {
@@ -41,6 +41,12 @@ function createLearningLoop(db, { provider, authorizeLearning, authorizeExecutio
       const decision = decideAdaptiveLearning({ context, learnerState: snapshot.learnerState, prerequisites });
       if (!decision.academicDecision.dependentWorkAllowed) return failed('PREREQUISITE_TARGET_REQUIRED');
       const generationInput = { context, decision };
+      if (prepareGeneration !== undefined) {
+        stage = 'planning';
+        if (typeof prepareGeneration !== 'function') return failed('PLANNING_POLICY_REQUIRED');
+        generationInput.planning = await prepareGeneration(freeze({ context, decision }));
+        require('../gamePlanning/gamePlanner').requirePlannedSelection(generationInput.planning);
+      }
       stage = 'reuse';
       let stored = await persistence.findReusableGame(generationInput);
       if (!stored) {

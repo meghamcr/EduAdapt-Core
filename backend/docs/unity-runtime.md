@@ -1,5 +1,7 @@
 # Trusted Unity runtime boundary (Phase 3G)
 
+Current implementation note (October 8): the existing Unity project now includes generic HTTP transport, Level/Notes display, source-recall interaction controls and server-acknowledged progress. The bootstrap scene is connected. Unity PlayMode tests cover protocol validation and two synthetic backend/HTTP flows. See [integration guide](level-game-planning.md) and [checkpoint](implementation-checkpoint.md). Any earlier “Unity client not implemented” wording below describes the prior backend-contract phase. Real curriculum approval and production identity/access wiring remain required.
+
 The server converts `source-game-v1` / specVersion 1, persisted in
 `grounded-game-storage-v1`, into **`eduadapt-runtime-v1`**. These are separate
 contracts. Unknown runtime versions fail before writes; unknown source versions
@@ -16,9 +18,10 @@ fixed error envelopes. Lower-level gameplay/persistence/context methods are
 server-only domain APIs, not HTTP handlers. Never return persisted packages or
 serialize caught Error objects to a client.
 
-There is no new HTTP route or authentication implementation. A future authenticated
-adapter must derive learnerId from the verified actor (or explicitly authorized
-teacher-to-student scope), never trust body/localStorage learner IDs, and inject
+The HTTP adapter is now implemented; see [HTTP API](runtime-http-api.md) for routes,
+request/response formats and wiring. Production authentication remains unconnected.
+The adapter derives learnerId from an injected verified student actor, rejects body
+learner IDs and requires the host to inject
 `authorizeExecution` bound to that actor. The callback receives learnerId,
 gameSpecId and the exact specificationChecksum, and must return a nonempty
 server-owned certification reference only when execution is currently permitted.
@@ -96,7 +99,8 @@ a launch with a reused key and a different adapted game rejects with a conflict.
    C# loader/DTO/GameManager to migrate.
 2. Build phase rendering with plain-text teaching, blanked prompts, CLOZE input and
    MCQ buttons. Preserve phase/challenge order. Use reviewed bundled visual keys.
-3. Connect through the future authenticated backend adapter, not Supabase tables.
+3. Wire the HTTP adapter to production actor verification and execution policy,
+   then connect Unity through its routes instead of Supabase tables.
    Keep no database/service-role keys or Gemini credentials in the Web build.
 4. Implement sequential event delivery, stable event IDs, acknowledgement-driven
    progress, generic safe errors and restore. Display server scoring only.

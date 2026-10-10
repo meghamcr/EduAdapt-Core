@@ -1,0 +1,6 @@
+{
+  "name": "EduAdapt.Runtime.Tests",
+  "references": ["EduAdapt.Runtime"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

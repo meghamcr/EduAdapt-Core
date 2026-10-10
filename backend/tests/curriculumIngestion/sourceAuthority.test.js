@@ -11,6 +11,41 @@ async function generate(change = () => {}) {
  return parseCurriculum(input, { fetchImpl: async () => response(wire) });
 }
 function item(wire, props) { return { ...wire.nodes[1].materials[0], ...props }; }
+test('embedded source activities count without requiring separate activity nodes', async () => {
+ const a = await generate(w => {
+  w.nodes[1].type = 'concept';
+  w.nodes[1].materials.push(item(w, { role: 'activity', text: 'Arrange the counters in two ways. Explain what stays the same.', student_completion: true }));
+ });
+ const v = validateCurriculum(a);
+ assert.equal(v.valid, true);
+ assert.equal(v.stats.explicitExampleOrActivityNodes, 0);
+ assert.equal(v.stats.embeddedExampleOrActivityMaterials, 1);
+ assert.equal(v.stats.materialRoles.activity, 1);
+ assert.ok(!v.warnings.some(w => w.includes('No standalone example/activity')));
+});
+test('inferred activities cannot mask missing source tasks; omissions remain warnings', async () => {
+ const a = await generate(w => {
+  w.nodes[1].type = 'concept';
+  w.nodes[1].materials.push(item(w, { role: 'activity', authority: 'MODEL_INFERENCE', evidence_kind: 'DEDUCTION', text: 'An invented follow-up task.' }));
+ });
+ const v = validateCurriculum(a);
+ assert.equal(v.valid, true);
+ assert.equal(v.stats.embeddedExampleOrActivityMaterials, 0);
+ assert.equal(v.stats.materialRoles.activity, undefined);
+ assert.ok(v.warnings.some(w => w.includes('possible omissions')));
+});
+test('source worked steps and multipart numerical tasks survive embedded generation', async () => {
+ const text = 'Use 18 counters. Make 3 equal groups. Record the number in each group: ___. Then rearrange into 2 groups and explain the difference.';
+ const a = await generate(w => {
+  w.nodes[1].type = 'concept';
+  w.nodes[1].materials = [item(w, { role: 'investigation', text, student_completion: true }), item(w, { role: 'worked_example', text: 'Source example: 12 counters / 3 groups = 4 counters per group.' })];
+ });
+ assert.ok(a.nodes[1].content.includes(text));
+ const v = validateCurriculum(a);
+ assert.equal(v.valid, true);
+ assert.equal(v.stats.embeddedExampleOrActivityMaterials, 2);
+ assert.equal(v.stats.materialRoles.worked_example, 1);
+});
 test('direct text and grounded synthesis have distinct storage, evidence and content', async () => {
  const a = await generate(w => w.nodes[1].materials.push(item(w, { authority: 'SOURCE_GROUNDED_SYNTHESIS', evidence_kind: 'SOURCE_SUMMARY', text: 'A synthetic overview of source activities.' })));
  assert.equal(a.source_context.authorityVersion, 2);

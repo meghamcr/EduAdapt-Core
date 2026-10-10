@@ -1,0 +1,6 @@
+{
+  "name": "EduAdapt.Runtime",
+  "rootNamespace": "EduAdapt.Runtime",
+  "references": ["Unity.InputSystem"],
+  "autoReferenced": true
+}

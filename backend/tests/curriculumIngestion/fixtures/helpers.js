@@ -20,6 +20,7 @@ function modelOutput(input = identity, nodes = curriculum().nodes) {
     ...(input.sourceContext ? { objective_evidence: [input.sourceContext.documents.flatMap(doc => doc.pages.map(p => ({ sourceId: doc.sourceId, page: p.page })))] } : {}),
     nodes: nodes.map(({ id, parent_id, ...node }) => ({ temp_id: id, parent_temp_id: parent_id, ...node,
       ...(input.sourceContext ? { materials: [{ role: "explanation", authority: "EXPLICIT_SOURCE_CONTENT", evidence_kind: "SOURCE_TEXT", text: node.content,
+        ...(input.sourceContext.textUnits ? { source_unit_ids: input.sourceContext.textUnits.map(unit => unit.id) } : {}),
         source_refs: input.sourceContext.documents.flatMap(doc => doc.pages.map(p => ({ sourceId: doc.sourceId, page: p.page }))),
         student_completion: false, visual: { status: "NOT_APPLICABLE", description: "" } }] } : {}) })) };
 }

@@ -172,7 +172,7 @@ function createGameplayService(db, { now = () => new Date(), authorizeExecution,
 }
 function runtimeReceipt(row, sessionId, state, game) {
   return freeze({ runtimeVersion: RUNTIME_VERSION, sessionId, ...receipt(row),
-    feedback: row.correctness === null ? null : row.correctness ? 'Your answer matches the source text.' : 'Compare your answer with the source text.',
+    feedback: row.type==='HINT_REQUESTED' ? (game.challenges.find(c=>c.id===row.challengeId)?.type==='CONSTRUCTION' ? 'Start with the bottom row. Compare the position and orientation of each coloured block with the generated reference.' : 'Read the source passage again.') : row.correctness === null ? null : game.challenges.find(c=>c.id===row.challengeId)?.type==='CONSTRUCTION' ? (row.correctness ? 'Your model matches the generated reference.' : 'Keep building. Check positions, rotation and overlapping blocks against the reference.') : row.correctness ? 'Your answer matches the source text.' : 'Compare your answer with the source text.',
     progress: progress(state, game) });
 }
 function receipt(row) {

@@ -32,7 +32,8 @@ function applyEvent(game, before, event, time) {
     } else if (['ANSWER_SUBMITTED', 'HINT_REQUESTED', 'CHALLENGE_SKIPPED'].includes(event.type)) {
       if (!state.active || state.active.challengeId !== challenge.id) fail('CHALLENGE_NOT_ACTIVE');
       if (event.type === 'ANSWER_SUBMITTED') {
-        correctness = scoreChallenge(challenge, event.response); attempt = ++state.active.attempts;
+        correctness = scoreChallenge(challenge, event.response);
+        if(challenge.type==='CONSTRUCTION') state.active.placements=structuredClone(event.response); attempt = ++state.active.attempts;
         const elapsed = time - state.active.presentedAt;
         // Receipt latency is not cognitive processing time. Excessive intervals
         // remain unknown rather than being clipped into invented evidence.
@@ -43,7 +44,7 @@ function applyEvent(game, before, event, time) {
         if (correctness) finish(false);
       } else if (event.type === 'HINT_REQUESTED') {
         if (!game.instructionalPolicy.hintsAllowed || !challenge.hint) fail('HINT_NOT_ALLOWED'); state.active.hintsUsed++;
-      } else finish(true);
+      } else { if(challenge.type==='CONSTRUCTION') fail('CONSTRUCTION_REQUIRED'); finish(true); }
     } else if (event.type === 'GAME_COMPLETED') {
       if (state.active || state.challengeIndex !== game.challenges.length || phase?.type !== 'COMPLETE') fail('GAME_INCOMPLETE');
       state.status = 'COMPLETED';
